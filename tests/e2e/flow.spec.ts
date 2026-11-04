@@ -34,6 +34,8 @@ async function login(page: Page, who: { email: string; password: string }) {
 test.describe.configure({ mode: "serial" });
 
 test("visita 1 completa y toque de tarjeta", async ({ page }) => {
+  page.on("console", (m) => m.type() === "error" && console.log("[navegador]", m.text()));
+  page.on("pageerror", (e) => console.log("[navegador]", e.message));
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 1 })).toContainText("a un toque");
   await shot(page, "landing");
