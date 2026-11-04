@@ -11,9 +11,13 @@ import { checkSlug, createBusiness } from "../actions";
 
 const STEPS = ["Tu negocio", "Logo", "Portada"];
 
-export function Wizard({ needsTerms }: { needsTerms: boolean }) {
+export function Wizard({ needsTerms, initialStep = 0 }: { needsTerms: boolean; initialStep?: number }) {
   const router = useRouter();
-  const [step, setStep] = useState(0);
+  const [step, setStepState] = useState(initialStep);
+  const setStep = (n: number) => {
+    setStepState(n);
+    if (n > 0) router.replace(`/admin/bienvenida?paso=${n === 1 ? "logo" : "portada"}`, { scroll: false });
+  };
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [slugTouched, setSlugTouched] = useState(false);

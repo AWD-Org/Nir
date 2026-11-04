@@ -9,12 +9,17 @@ import { col, getDraft, getTenant, nowTs, pageRef } from "./db";
  * y cuando AMOXTLI® cambia el estado de la cuenta.
  */
 export async function publishTenant(tenantId: string) {
+  const tenant = await writePublicPage(tenantId);
+  if (tenant) revalidatePublic(tenantId, tenant.slug);
+}
+
+/** Escribe public/page sin revalidar (por ejemplo, al crear un negocio en vista previa). */
+export async function writePublicPage(tenantId: string) {
   const [tenant, draft] = await Promise.all([getTenant(tenantId), getDraft(tenantId)]);
-  if (!tenant) return;
-  const page = buildPublicPage(tenant, draft);
-  await pageRef(tenantId).set(page);
+  if (!tenant) return null;
+  await pageRef(tenantId).set(buildPublicPage(tenant, draft));
   await col.tenants().doc(tenantId).update({ publishedAt: nowTs() });
-  revalidatePublic(tenantId, tenant.slug);
+  return tenant;
 }
 
 export function revalidatePublic(tenantId: string, slug: string) {

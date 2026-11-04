@@ -21,7 +21,7 @@ import type { MenuItem, TenantTheme } from "@/lib/domain/types";
 import { TEMPLATES, themeIssues } from "@/lib/themes";
 import { logAudit } from "@/lib/server/audit";
 import { col, draftRef, getDraft, nowTs } from "@/lib/server/db";
-import { publishTenant } from "@/lib/server/publish";
+import { publishTenant, writePublicPage } from "@/lib/server/publish";
 import { ActionError, getSession, ownerForAction, run, type OwnerContext } from "@/lib/server/session";
 import { isWebp } from "@/lib/media/webp";
 
@@ -101,7 +101,8 @@ export async function createBusiness(input: { name: string; slug: string; accept
     });
 
     await adminAuth().setCustomUserClaims(s.uid, { role: "owner", tenantId });
-    await publishTenant(tenantId);
+    // Sin revalidar: la cuenta está en vista previa y así el asistente sigue en pantalla.
+    await writePublicPage(tenantId);
     return { tenantId, slug };
   });
 }
