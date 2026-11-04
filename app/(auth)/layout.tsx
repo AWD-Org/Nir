@@ -8,7 +8,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         <Logo />
       </header>
       <main className="flex flex-1 items-start justify-center px-5 pb-16 pt-6 sm:pt-12">
-        <div className="w-full max-w-[400px]">{children}</div>
+        <div className="anim-rise w-full max-w-[400px]">{children}</div>
       </main>
       <footer className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 px-5 py-6 text-sm text-ink-2">
         <Link href="/terminos" className="hover:text-ink">Términos</Link>

@@ -86,3 +86,86 @@
 @utility num {
   @apply font-mono tabular-nums;
 }
+
+/* ---------- Movimiento (ver DESIGN.md › Motion) ----------
+   Todas las animaciones usan fill-mode "backwards": aplican el estado inicial mientras esperan
+   su retraso y, al terminar, no dejan transformaciones fijas (no chocan con el arrastre de dnd-kit).
+   Con prefers-reduced-motion la regla global las reduce a 0.01 ms: el contenido queda visible. */
+@keyframes rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(28px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes slide-in-left {
+  from { opacity: 0; transform: translateX(-28px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes sheet-up {
+  from { transform: translateY(100%); }
+  to { transform: none; }
+}
+@keyframes sheet-left {
+  from { transform: translateX(100%); }
+  to { transform: none; }
+}
+@keyframes pop {
+  0% { transform: scale(0.4); opacity: 0; }
+  60% { transform: scale(1.15); opacity: 1; }
+  100% { transform: scale(1); }
+}
+@keyframes shimmer {
+  from { background-position: -200% 0; }
+  to { background-position: 200% 0; }
+}
+@keyframes flash {
+  0% { background-color: var(--color-brand-tint); }
+  100% { background-color: transparent; }
+}
+@keyframes dialog-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: none; }
+}
+
+@utility anim-rise {
+  animation: rise 0.45s var(--ease-out-soft) backwards;
+  animation-delay: calc(var(--i, 0) * 45ms);
+}
+@utility anim-fade {
+  animation: fade 0.35s ease-out backwards;
+}
+@utility anim-in-right {
+  animation: slide-in-right 0.32s var(--ease-out-soft) backwards;
+}
+@utility anim-in-left {
+  animation: slide-in-left 0.32s var(--ease-out-soft) backwards;
+}
+@utility anim-pop {
+  animation: pop 0.38s var(--ease-out-soft) backwards;
+}
+@utility anim-flash {
+  animation: flash 1.2s ease-out;
+}
+@utility skeleton {
+  background: linear-gradient(90deg, var(--color-line) 25%, #ececf0 50%, var(--color-line) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s linear infinite;
+  border-radius: var(--radius-ctl);
+}
+
+/* Hojas y diálogos de Radix */
+[data-sheet][data-state="open"] { animation: sheet-up 0.32s var(--ease-out-soft); }
+@media (min-width: 768px) {
+  [data-sheet][data-state="open"] { animation: sheet-left 0.32s var(--ease-out-soft); }
+}
+[data-overlay][data-state="open"] { animation: fade 0.2s ease-out; }
+[data-dialog][data-state="open"] { animation: dialog-in 0.22s var(--ease-out-soft); }
+
+/* Preguntas frecuentes: la respuesta entra suave al abrir */
+details[open] > :not(summary) { animation: rise 0.35s var(--ease-out-soft); }

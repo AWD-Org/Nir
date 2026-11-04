@@ -22,8 +22,9 @@ export function Sheet({
   return (
     <D.Root open={open} onOpenChange={onOpenChange}>
       <D.Portal>
-        <D.Overlay className="fixed inset-0 z-40 bg-ink/40 data-[state=open]:animate-[fade_.15s_ease-out]" />
+        <D.Overlay data-overlay className="fixed inset-0 z-40 bg-ink/40" />
         <D.Content
+          data-sheet
           className="fixed inset-x-0 bottom-0 z-50 flex max-h-[92dvh] flex-col rounded-t-2xl bg-surface shadow-2xl outline-none md:inset-y-0 md:left-auto md:right-0 md:max-h-none md:w-[480px] md:rounded-none"
           aria-describedby={description ? undefined : undefined}
         >

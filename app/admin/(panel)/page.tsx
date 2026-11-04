@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, Check, Circle } from "lucide-react";
 import { QrDownload } from "@/components/admin/qr-download";
+import { CountUp } from "@/components/motion/reveal";
 import { isPublic } from "@/lib/domain/constants";
 import { dayKey, lastDayKeys } from "@/lib/domain/dates";
 import { publicUrl } from "@/lib/domain/links";
@@ -39,8 +40,8 @@ export default async function AdminHome() {
         <section className="panel p-5">
           <h2 className="text-lg font-semibold">Deja lista tu página</h2>
           <ul className="mt-3 divide-y divide-line">
-            {checklist.map((c) => (
-              <li key={c.label}>
+            {checklist.map((c, i) => (
+              <li key={c.label} className="anim-rise" style={{ "--i": i + 3 } as React.CSSProperties}>
                 <Link href={c.href} className="flex min-h-12 items-center gap-3 text-[15px]">
                   {c.done ? <Check className="h-5 w-5 text-ok" /> : <Circle className="h-5 w-5 text-line-2" />}
                   <span className={c.done ? "text-ink-2 line-through" : ""}>{c.label}</span>
@@ -77,7 +78,7 @@ function Stat({ label, value }: { label: string; value: number }) {
   return (
     <div className="panel p-5">
       <p className="text-sm text-ink-2">{label}</p>
-      <p className="num mt-1 text-[32px] font-semibold leading-none">{value.toLocaleString("es-MX")}</p>
+      <CountUp value={value} className="num mt-1 block text-[32px] font-semibold leading-none" />
     </div>
   );
 }

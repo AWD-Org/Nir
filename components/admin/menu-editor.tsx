@@ -130,9 +130,10 @@ export function MenuEditor({ tenant, initial, readOnly }: { tenant: Tenant; init
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
             <SortableContext items={cats.map(([id]) => `cat:${id}`)} strategy={verticalListSortingStrategy}>
               <div className="mt-6 space-y-5">
-                {cats.map(([cid, cat]) => (
+                {cats.map(([cid, cat], ci) => (
                   <CategoryBlock
                     key={cid}
+                    index={ci}
                     id={cid}
                     cat={cat}
                     readOnly={readOnly}
@@ -169,7 +170,7 @@ export function MenuEditor({ tenant, initial, readOnly }: { tenant: Tenant; init
         <div className="sticky top-8">
           <p className="mb-3 text-center text-sm text-ink-2">Así lo ve el comensal</p>
           <Phone>
-            <PublicView page={preview} mode="preview" />
+            <PublicView key={preview.theme.templateId} page={preview} mode="preview" />
           </Phone>
         </div>
       </aside>
@@ -292,6 +293,7 @@ function EmptyMenu({ readOnly, onAdd, onCustom }: { readOnly: boolean; onAdd: (n
 /* ---------- Categoría con sus productos ---------- */
 
 function CategoryBlock({
+  index,
   id,
   cat,
   items,
@@ -304,6 +306,7 @@ function CategoryBlock({
   onAvailable,
   onPrice,
 }: {
+  index: number;
   id: string;
   cat: MenuCategory;
   items: [string, MenuItem][];
@@ -320,8 +323,8 @@ function CategoryBlock({
   return (
     <section
       ref={s.setNodeRef}
-      style={{ transform: CSS.Translate.toString(s.transform), transition: s.transition }}
-      className={`panel overflow-hidden ${s.isDragging ? "relative z-10 shadow-lg" : ""}`}
+      style={{ transform: CSS.Translate.toString(s.transform), transition: s.transition, "--i": Math.min(index, 6) } as React.CSSProperties}
+      className={`panel anim-rise overflow-hidden ${s.isDragging ? "relative z-10 shadow-lg" : ""}`}
       aria-label={cat.name}
     >
       <header className="flex items-center gap-1 border-b border-line bg-paper/60 px-2 py-2">
@@ -352,8 +355,8 @@ function CategoryBlock({
 
       <SortableContext items={items.map(([iid]) => `item:${iid}`)} strategy={verticalListSortingStrategy}>
         <ul className="divide-y divide-line">
-          {items.map(([iid, item]) => (
-            <ItemRow key={iid} id={iid} item={item} readOnly={readOnly} onEdit={() => onEditItem(iid)} onAvailable={(v) => onAvailable(iid, v)} onPrice={(c) => onPrice(iid, c)} />
+          {items.map(([iid, item], n) => (
+            <ItemRow key={iid} index={n} id={iid} item={item} readOnly={readOnly} onEdit={() => onEditItem(iid)} onAvailable={(v) => onAvailable(iid, v)} onPrice={(c) => onPrice(iid, c)} />
           ))}
         </ul>
       </SortableContext>
@@ -368,6 +371,7 @@ function CategoryBlock({
 }
 
 function ItemRow({
+  index,
   id,
   item,
   readOnly,
@@ -375,6 +379,7 @@ function ItemRow({
   onAvailable,
   onPrice,
 }: {
+  index: number;
   id: string;
   item: MenuItem;
   readOnly: boolean;
@@ -386,8 +391,8 @@ function ItemRow({
   return (
     <li
       ref={s.setNodeRef}
-      style={{ transform: CSS.Translate.toString(s.transform), transition: s.transition }}
-      className={`flex items-center gap-2 bg-surface px-2 py-2 sm:gap-3 ${s.isDragging ? "relative z-10 shadow-lg" : ""}`}
+      style={{ transform: CSS.Translate.toString(s.transform), transition: s.transition, "--i": Math.min(index, 8) } as React.CSSProperties}
+      className={`anim-rise flex items-center gap-2 bg-surface px-2 py-2 transition-[background-color] sm:gap-3 ${s.isDragging ? "relative z-10 shadow-lg" : ""}`}
     >
       {!readOnly && (
         <button className="flex h-10 w-7 shrink-0 cursor-grab touch-none items-center justify-center text-ink-3 hover:text-ink" aria-label={`Mover ${item.name}`} {...s.attributes} {...s.listeners}>
@@ -459,7 +464,7 @@ function PriceInput({ cents, disabled, name, onSave }: { cents: number; disabled
       />
       <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2" aria-hidden>
         {state === "saving" && <Loader2 className="h-4 w-4 animate-spin text-ink-3" />}
-        {state === "saved" && <Check className="h-4 w-4 text-ok" />}
+        {state === "saved" && <Check className="anim-pop h-4 w-4 text-ok" />}
       </span>
     </div>
   );

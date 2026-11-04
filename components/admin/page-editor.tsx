@@ -49,7 +49,7 @@ export function PageEditor({ initial, draft, readOnly, hasCards }: { initial: Te
         <div className="sticky top-8">
           <p className="mb-3 text-center text-sm text-ink-2">Vista previa en vivo</p>
           <Phone>
-            <PublicView page={preview} mode="preview" />
+            <PublicView key={preview.theme.templateId} page={preview} mode="preview" />
           </Phone>
           <p className="mt-3 text-center text-sm text-ink-2">Se publica al guardar cada sección.</p>
         </div>
@@ -88,14 +88,14 @@ function Section({
   const [pending, start] = useTransition();
   const [saved, setSaved] = useState(false);
   return (
-    <section id={id} className="panel scroll-mt-24 p-5 sm:p-6" aria-labelledby={`${id}-title`}>
+    <section id={id} className="panel anim-rise scroll-mt-24 p-5 sm:p-6" aria-labelledby={`${id}-title`}>
       <h2 id={`${id}-title`} className="text-lg font-semibold">{title}</h2>
       {description && <p className="mt-1 text-[15px] text-ink-2">{description}</p>}
       <fieldset disabled={readOnly} className="mt-5 space-y-4">{children}</fieldset>
       {onSave && !readOnly && (
         <div className="mt-5 flex items-center justify-end gap-3 border-t border-line pt-4">
           {disabledReason && <p className="mr-auto flex items-center gap-1.5 text-sm text-bad"><AlertTriangle className="h-4 w-4" />{disabledReason}</p>}
-          {saved && !dirty && <span className="flex items-center gap-1 text-sm text-ok"><Check className="h-4 w-4" />Publicado</span>}
+          {saved && !dirty && <span className="anim-pop flex items-center gap-1 text-sm text-ok"><Check className="h-4 w-4" />Publicado</span>}
           <button
             className="btn-primary"
             disabled={pending || !dirty || !!disabledReason}

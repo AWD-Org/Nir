@@ -71,8 +71,15 @@ Móvil primero desde 375 px. Objetivos táctiles de 44 px. La vista previa en vi
 | Dial | Admin / consola | Landing | Por qué |
 |---|---|---|---|
 | Variación de composición | 3 | 6 | El panel debe ser predecible; la landing se diferencia con el hero asimétrico |
-| Intensidad de movimiento | 2 | 4 | Solo confirmar acciones en el panel; en la landing, el toque NFC del demo |
+| Intensidad de movimiento | 4 | 7 | Panel: movimiento funcional (entrar a cada sección, hojas, listas, gráficas, confirmaciones). Landing: narrativa con el toque NFC y el admin animándose solo |
 | Densidad visual | 6 | 3 | Uso diario del dueño en celular; la landing necesita aire |
+
+## Motion
+Decisión del 3 de noviembre de 2026: más movimiento en toda la app, siempre con función.
+- **Landing (motion, 7/10):** título que sube palabra por palabra; teléfono que entra y flota; motion graphic de la tarjeta "Mesa 4" acercándose al celular con ondas NFC en el punto de contacto (ciclo de 4.2 s + 1.6 s de pausa); ondas de fondo que respiran; línea de recorrido que se dibuja (toque → carta → reseña); fila real del admin cambiando precios y agotados sola con su aviso; revelado al hacer scroll en cada bloque; selector de plantilla con píldora que se desliza.
+- **Admin y consola (4/10):** entrada de cada sección, esqueletos de carga con brillo, hojas que suben (móvil) o entran por la derecha (escritorio), diálogos con escala, filas y categorías en cascada, barras de estadísticas que crecen, cifras que cuentan, check de precio guardado con rebote, indicador de sección activa que se desliza, pasos del asistente que se deslizan y barra de progreso.
+- **Página del comensal:** solo CSS (sin librería) para no afectar la carga en 4G: logo con rebote, botones en cascada, secciones que entran desde la derecha y regresan desde la izquierda, productos en cascada.
+- **Reglas:** `ease-out-soft` (cubic-bezier(.22,1,.36,1)); animaciones CSS con `fill-mode: backwards` para no fijar transformaciones (no chocan con el arrastre); `prefers-reduced-motion` reduce todo a 0.01 ms y `MotionConfig reducedMotion="user"` quita desplazamientos y deja solo opacidad. Nada pulsa sin función.
 
 ## Motivo gráfico
 Arcos concéntricos de onda NFC (cercanía), muy tenues, detrás del teléfono de la landing y en la tarjeta impresa. Nunca cruzan texto.

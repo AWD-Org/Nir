@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Bars, HBars } from "@/components/admin/charts";
+import { CountUp } from "@/components/motion/reveal";
 import { BUTTON_LABELS, SOCIAL_LABELS } from "@/lib/domain/constants";
 import { lastDayKeys } from "@/lib/domain/dates";
 import { summarize } from "@/lib/domain/stats";
@@ -41,8 +42,8 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ r
       </div>
 
       <section className="grid gap-4 sm:grid-cols-3">
-        <Tile label="Visitas" value={s.total.toLocaleString("es-MX")} />
-        <Tile label="Por tarjeta (NFC + QR)" value={(s.bySource.nfc + s.bySource.qr).toLocaleString("es-MX")} />
+        <Tile label="Visitas" value={<CountUp value={s.total} />} />
+        <Tile label="Por tarjeta (NFC + QR)" value={<CountUp value={s.bySource.nfc + s.bySource.qr} />} />
         <Tile label="Hora más fuerte" value={s.total ? `${String(peak).padStart(2, "0")}:00` : "—"} />
       </section>
 
@@ -90,7 +91,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ r
   );
 }
 
-function Tile({ label, value }: { label: string; value: string }) {
+function Tile({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="panel p-5">
       <p className="text-sm text-ink-2">{label}</p>

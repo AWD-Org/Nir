@@ -1,6 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
+/** Marca listo un cuadro después del primer pintado para que las barras crezcan desde cero. */
+function useReady() {
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setReady(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
+  return ready;
+}
 
 /**
  * Barras verticales de una sola serie (sin leyenda: el título la nombra).
@@ -27,6 +37,7 @@ export function Bars({
 }) {
   const format = FORMATS[kind];
   const [hover, setHover] = useState<number | null>(null);
+  const ready = useReady();
   const max = Math.max(1, ...data.map((d) => d.value));
   return (
     <figure>
@@ -34,6 +45,7 @@ export function Bars({
         <div className="flex h-40 items-end gap-[2px]" role="img" aria-label={`${label}. Máximo ${max}.`} onMouseLeave={() => setHover(null)}>
           {data.map((d, i) => (
             <button
+              data-i={i}
               key={d.label}
               type="button"
               className="group relative flex h-full flex-1 items-end focus:outline-none"
@@ -43,8 +55,12 @@ export function Bars({
               aria-label={`${format(d.label)}: ${d.value}`}
             >
               <span
-                className={`block w-full rounded-t-[4px] transition-colors ${hover === i ? "bg-ink" : "bg-brand-strong/85"}`}
-                style={{ height: d.value ? `${Math.max(2, (d.value / max) * 100)}%` : "2px", opacity: d.value ? 1 : 0.25 }}
+                className={`block w-full rounded-t-[4px] transition-[height,background-color] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] ${hover === i ? "bg-ink" : "bg-brand-strong/85"}`}
+                style={{
+                  height: !ready ? "0%" : d.value ? `${Math.max(2, (d.value / max) * 100)}%` : "2px",
+                  opacity: d.value ? 1 : 0.25,
+                  transitionDelay: ready ? `${Math.min(i * 18, 500)}ms, 0ms` : undefined,
+                }}
               />
             </button>
           ))}
@@ -84,6 +100,7 @@ export function Bars({
 
 /** Barras horizontales con etiqueta directa y valor en tinta (no en el color de la barra). */
 export function HBars({ rows, empty = "Sin datos en este rango." }: { rows: { label: string; value: number }[]; empty?: string }) {
+  const ready = useReady();
   const max = Math.max(1, ...rows.map((r) => r.value));
   const total = rows.reduce((a, r) => a + r.value, 0);
   if (!total) return <p className="text-[15px] text-ink-2">{empty}</p>;
@@ -98,7 +115,10 @@ export function HBars({ rows, empty = "Sin datos en este rango." }: { rows: { la
             </span>
           </div>
           <div className="mt-1 h-2 w-full rounded-full bg-paper">
-            <div className="h-2 rounded-full bg-brand-strong/85" style={{ width: `${(r.value / max) * 100}%` }} />
+            <div
+              className="h-2 rounded-full bg-brand-strong/85 transition-[width] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]"
+              style={{ width: ready ? `${(r.value / max) * 100}%` : "0%" }}
+            />
           </div>
         </li>
       ))}

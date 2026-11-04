@@ -26,6 +26,9 @@ interface Props {
 export function PublicView({ page, mode = "live", resolveImage }: Props) {
   const theme = useMemo(() => resolveTheme(page.theme), [page.theme]);
   const [view, setView] = useState<View>("home");
+  // Dirección de la transición: entrar a una sección desliza desde la derecha; volver, desde la izquierda.
+  const moved = useRef(false);
+  const anim = !moved.current ? "" : view === "home" ? "anim-in-left" : "anim-in-right";
   const tracker = useTracker(page.slug, mode === "live");
   const img = resolveImage ?? imgSrc;
   const rootRef = useRef<HTMLDivElement>(null);
@@ -33,14 +36,18 @@ export function PublicView({ page, mode = "live", resolveImage }: Props) {
   // Navegación con el botón "atrás" del celular.
   useEffect(() => {
     if (mode !== "live") return;
-    const sync = () => setView(fromHash(location.hash));
-    sync();
+    setView(fromHash(location.hash));
+    const sync = () => {
+      moved.current = true;
+      setView(fromHash(location.hash));
+    };
     window.addEventListener("popstate", sync);
     return () => window.removeEventListener("popstate", sync);
   }, [mode]);
 
   const go = useCallback(
     (v: View) => {
+      moved.current = true;
       if (mode === "live") {
         if (v === "home") history.back();
         else history.pushState(null, "", HASH[v]);
@@ -76,8 +83,8 @@ export function PublicView({ page, mode = "live", resolveImage }: Props) {
   const displayClass = theme.template.uppercaseDisplay ? "uppercase tracking-[0.01em]" : "";
 
   return (
-    <div ref={rootRef} style={style} className="min-h-full w-full" data-template={theme.template.id}>
-      <div className="mx-auto flex min-h-dvh w-full max-w-[480px] flex-col">
+    <div ref={rootRef} style={style} className="anim-fade min-h-full w-full overflow-x-hidden" data-template={theme.template.id}>
+      <div key={view} className={`mx-auto flex min-h-dvh w-full max-w-[480px] flex-col ${anim}`}>
         {view === "home" && (
           <Home page={page} displayClass={displayClass} img={img} go={go} tracker={tracker} template={theme.template.id} live={mode === "live"} />
         )}
@@ -123,7 +130,7 @@ function Home({
         )}
         <div className="px-6">
           <div
-            className="-mt-12 h-24 w-24 overflow-hidden border-4 bg-[var(--surface)]"
+            className="anim-pop -mt-12 h-24 w-24 overflow-hidden border-4 bg-[var(--surface)]"
             style={{ borderColor: "var(--bg)", borderRadius: template === "noche" ? "0" : "999px" }}
           >
             {page.logoImageId ? (
@@ -138,14 +145,16 @@ function Home({
       </header>
 
       <main className="flex flex-1 flex-col px-6 pb-8 pt-4">
-        <Title className={`text-[34px] leading-[1.05] ${displayClass}`} style={{ fontFamily: "var(--display)", fontWeight: template === "noche" ? 800 : 400 }}>
+        <Title className={`anim-rise text-[34px] leading-[1.05] ${displayClass}`} style={{ fontFamily: "var(--display)", fontWeight: template === "noche" ? 800 : 400 }}>
           {page.name}
         </Title>
         {page.profile.hours && <p className="mt-2 text-[16px] text-[var(--muted)]">{page.profile.hours}</p>}
 
         <nav aria-label="Accesos" className="mt-7 flex flex-col gap-3">
-          {page.buttons.map((key) => (
-            <LinkButton key={key} k={key} page={page} go={go} tracker={tracker} />
+          {page.buttons.map((key, i) => (
+            <div key={key} className="anim-rise" style={{ "--i": i + 2 } as CSSProperties}>
+              <LinkButton k={key} page={page} go={go} tracker={tracker} />
+            </div>
           ))}
           {page.buttons.length === 0 && (
             <p className="text-[16px] text-[var(--muted)]">Este negocio todavía no configura su página.</p>
@@ -340,8 +349,8 @@ function MenuSection({
               {c.name}
             </h2>
             <ul className="mt-2">
-              {c.items.map((i) => (
-                <ItemRow key={i.id} item={i} img={img} />
+              {c.items.map((i, n) => (
+                <ItemRow key={i.id} item={i} img={img} index={n} />
               ))}
             </ul>
           </section>
@@ -351,10 +360,10 @@ function MenuSection({
   );
 }
 
-function ItemRow({ item, img }: { item: PublicItem; img: (id: string, s: "thumb" | "full") => string }) {
+function ItemRow({ item, img, index }: { item: PublicItem; img: (id: string, s: "thumb" | "full") => string; index: number }) {
   const off = !item.available;
   return (
-    <li className="flex gap-4 border-b px-2 py-4" style={{ borderColor: "var(--line)", opacity: off ? 0.6 : 1 }}>
+    <li className="anim-rise flex gap-4 border-b px-2 py-4" style={{ borderColor: "var(--line)", opacity: off ? 0.6 : 1, "--i": Math.min(index, 8) } as CSSProperties}>
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline justify-between gap-3">
           <h3 className="text-[17px] font-semibold leading-snug">{item.name}</h3>
@@ -414,15 +423,15 @@ function SocialSection({ page, displayClass, back, tracker }: { page: PublicPage
     <>
       <SectionBar title="Redes sociales" back={back} displayClass={displayClass} />
       <main className="flex flex-col gap-3 px-6 pb-10 pt-4">
-        {entries.map(([k, v]) => (
+        {entries.map(([k, v], n) => (
           <a
             key={k}
+            style={{ borderColor: "var(--line)", borderRadius: "var(--radius)", background: "var(--surface)", "--i": n } as CSSProperties}
             href={socialHref(k, v)}
             target="_blank"
             rel="noopener"
             onClick={() => tracker.social(k)}
-            className="flex min-h-14 items-center gap-3 border-[1.5px] px-5 text-[17px] font-medium"
-            style={{ borderColor: "var(--line)", borderRadius: "var(--radius)", background: "var(--surface)" }}
+            className="anim-rise flex min-h-14 items-center gap-3 border-[1.5px] px-5 text-[17px] font-medium"
           >
             <SocialIcon k={k} className="h-6 w-6" />
             <span className="flex-1">{SOCIAL_LABELS[k]}</span>
@@ -467,7 +476,7 @@ function WifiSection({ page, displayClass, back }: { page: PublicPage; displayCl
             className="mt-4 flex min-h-14 w-full items-center justify-center border-[1.5px] text-[17px] font-medium"
             style={{ background: "var(--btn-bg)", color: "var(--btn-text)", borderColor: "var(--btn-border)", borderRadius: "var(--radius)" }}
           >
-            {copied ? "Contraseña copiada" : "Copiar contraseña"}
+            <span key={String(copied)} className={copied ? "anim-pop" : ""}>{copied ? "Contraseña copiada" : "Copiar contraseña"}</span>
           </button>
         )}
         <p aria-live="polite" className="sr-only">

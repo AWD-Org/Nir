@@ -60,7 +60,9 @@ export function Wizard({ needsTerms, initialStep = 0 }: { needsTerms: boolean; i
       <ol className="mb-8 flex gap-2" aria-label="Pasos">
         {STEPS.map((s, i) => (
           <li key={s} className="flex-1">
-            <div className={`h-1 rounded-full ${i <= step ? "bg-brand-strong" : "bg-line"}`} />
+            <div className="h-1 overflow-hidden rounded-full bg-line">
+              <div className="h-full origin-left bg-brand-strong transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]" style={{ transform: `scaleX(${i <= step ? 1 : 0})` }} />
+            </div>
             <p className={`mt-2 text-sm ${i === step ? "font-medium text-ink" : "text-ink-2"}`} aria-current={i === step ? "step" : undefined}>
               {s}
             </p>
@@ -69,7 +71,7 @@ export function Wizard({ needsTerms, initialStep = 0 }: { needsTerms: boolean; i
       </ol>
 
       {step === 0 && (
-        <form onSubmit={create} className="space-y-5">
+        <form onSubmit={create} className="anim-in-right space-y-5">
           <div>
             <h1 className="text-[28px] font-semibold leading-tight">¿Cómo se llama tu negocio?</h1>
             <p className="mt-2 text-ink-2">Con este nombre armamos la dirección que va grabada en tus tarjetas.</p>
@@ -117,7 +119,7 @@ export function Wizard({ needsTerms, initialStep = 0 }: { needsTerms: boolean; i
       )}
 
       {step === 1 && (
-        <div className="space-y-6">
+        <div key="s1" className="anim-in-right space-y-6">
           <div>
             <h1 className="text-[28px] font-semibold leading-tight">Sube tu logo</h1>
             <p className="mt-2 text-ink-2">Aparece arriba de tu página y en tus tarjetas. Lo recortamos en cuadrado.</p>
@@ -131,7 +133,7 @@ export function Wizard({ needsTerms, initialStep = 0 }: { needsTerms: boolean; i
       )}
 
       {step === 2 && (
-        <div className="space-y-6">
+        <div key="s2" className="anim-in-right space-y-6">
           <div>
             <h1 className="text-[28px] font-semibold leading-tight">Elige una foto de portada</h1>
             <p className="mt-2 text-ink-2">La fachada, la barra o tu platillo más pedido. Se ve en horizontal.</p>

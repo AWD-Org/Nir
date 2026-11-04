@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useTransition } from "react";
+import { motion, MotionConfig } from "motion/react";
 import { BarChart3, BookOpen, ExternalLink, House, LogOut, Palette, Receipt, Eye } from "lucide-react";
 import { logout } from "@/components/auth/auth-client";
 import { NirMark } from "@/components/ui/logo";
@@ -47,6 +48,7 @@ export function AdminShell({
     });
 
   return (
+    <MotionConfig reducedMotion="user">
     <div className="min-h-dvh md:flex">
       {/* Barra lateral (escritorio) */}
       <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col border-r border-line bg-surface md:flex">
@@ -64,12 +66,15 @@ export function AdminShell({
               key={href}
               href={href}
               aria-current={active(href) ? "page" : undefined}
-              className={`flex min-h-11 items-center gap-3 rounded-lg px-3 text-[15px] font-medium transition-colors ${
-                active(href) ? "bg-paper text-ink" : "text-ink-2 hover:bg-paper hover:text-ink"
+              className={`relative flex min-h-11 items-center gap-3 rounded-lg px-3 text-[15px] font-medium transition-colors ${
+                active(href) ? "text-ink" : "text-ink-2 hover:bg-paper/60 hover:text-ink"
               }`}
             >
-              <Icon className={`h-[18px] w-[18px] ${active(href) ? "text-brand-strong" : ""}`} />
-              {label}
+              {active(href) && (
+                <motion.span layoutId="nav-active" className="absolute inset-0 rounded-lg bg-paper" transition={{ type: "spring", stiffness: 500, damping: 38 }} />
+              )}
+              <Icon className={`relative h-[18px] w-[18px] ${active(href) ? "text-brand-strong" : ""}`} />
+              <span className="relative">{label}</span>
             </Link>
           ))}
         </nav>
@@ -139,13 +144,17 @@ export function AdminShell({
             key={href}
             href={href}
             aria-current={active(href) ? "page" : undefined}
-            className={`flex min-h-14 flex-col items-center justify-center gap-0.5 text-[11px] font-medium ${active(href) ? "text-brand-strong" : "text-ink-2"}`}
+            className={`relative flex min-h-14 flex-col items-center justify-center gap-0.5 text-[11px] font-medium ${active(href) ? "text-brand-strong" : "text-ink-2"}`}
           >
+            {active(href) && (
+              <motion.span layoutId="tab-active" className="absolute inset-x-5 top-0 h-[3px] rounded-b-full bg-brand-strong" transition={{ type: "spring", stiffness: 500, damping: 38 }} />
+            )}
             <Icon className="h-5 w-5" />
             {label}
           </Link>
         ))}
       </nav>
     </div>
+    </MotionConfig>
   );
 }

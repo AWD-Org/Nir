@@ -60,8 +60,8 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ e
             </tr>
           </thead>
           <tbody>
-            {tenants.map((t) => (
-              <tr key={t.id} className="border-b border-line/70 last:border-0 hover:bg-paper/60">
+            {tenants.map((t, i) => (
+              <tr key={t.id} className="anim-rise border-b border-line/70 last:border-0 hover:bg-paper/60" style={{ "--i": Math.min(i, 12) } as React.CSSProperties}>
                 <td className="px-4 py-3">
                   <Link href={`/console/negocios/${t.id}`} className="font-medium hover:underline">{t.name}</Link>
                   <p className="num text-sm text-ink-2">/{t.slug}</p>
