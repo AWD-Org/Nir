@@ -123,7 +123,7 @@ describe("campos protegidos", () => {
   });
   it("el dueño no cambia estado, cobro ni slug", async () => {
     const db = owner("uA", "tA");
-    await assertFails(updateDoc(doc(db, "tenants/tA"), { status: "active" }));
+    await assertFails(updateDoc(doc(db, "tenants/tA"), { status: "suspended" }));
     await assertFails(updateDoc(doc(db, "tenants/tA"), { billing: { cycle: "annual" } }));
     await assertFails(updateDoc(doc(db, "tenants/tA"), { slug: "otro" }));
   });

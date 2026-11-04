@@ -1,1 +1,1 @@
-{ "projects": { "default": "nir-dev", "dev": "nir-dev", "prod": "nir-prod" } }
+{ "projects": { "default": "nir-app-26fa6", "prod": "nir-app-26fa6" } }

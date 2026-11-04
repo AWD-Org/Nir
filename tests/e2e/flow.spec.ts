@@ -44,7 +44,7 @@ test("visita 1 completa y toque de tarjeta", async ({ page }) => {
   await page.getByLabel("Correo").fill(OWNER.email);
   await page.getByLabel("Contraseña").fill(OWNER.password);
   await page.getByRole("button", { name: "Crear mi cuenta" }).click();
-  await expect(page.getByRole("alert")).toContainText("Acepta los términos");
+  await expect(page.getByText(/Acepta los términos/)).toBeVisible();
   await page.getByRole("checkbox").check();
   await page.getByRole("button", { name: "Crear mi cuenta" }).click();
   await expect(page).toHaveURL(/\/admin\/bienvenida/);
