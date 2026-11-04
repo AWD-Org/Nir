@@ -8,7 +8,7 @@ import type { ButtonKey, PublicItem, PublicPage, SocialKey } from "@/lib/domain/
 import { resolveTheme } from "@/lib/themes";
 import { SocialIcon } from "./social-icons";
 
-type View = "home" | "menu" | "social" | "wifi";
+export type View = "home" | "menu" | "social" | "wifi";
 const HASH: Record<View, string> = { home: "", menu: "#carta", social: "#redes", wifi: "#wifi" };
 const fromHash = (h: string): View => (h === "#carta" ? "menu" : h === "#redes" ? "social" : h === "#wifi" ? "wifi" : "home");
 const TAG_LABEL = Object.fromEntries(TAGS.map((t) => [t.id, t.label]));
@@ -21,13 +21,23 @@ interface Props {
   mode?: "live" | "preview";
   /** Para vistas previas que muestran imágenes aún no guardadas. */
   resolveImage?: (id: string, size: "thumb" | "full") => string;
+  /** Solo vistas previas: controla la sección desde fuera (historia animada de la landing). */
+  forceView?: View;
+  /** Botón resaltado (por ejemplo, el de reseñas en la historia de la landing). */
+  highlight?: ButtonKey;
 }
 
-export function PublicView({ page, mode = "live", resolveImage }: Props) {
+export function PublicView({ page, mode = "live", resolveImage, forceView, highlight }: Props) {
   const theme = useMemo(() => resolveTheme(page.theme), [page.theme]);
-  const [view, setView] = useState<View>("home");
+  const [ownView, setView] = useState<View>("home");
+  const view = mode === "preview" && forceView ? forceView : ownView;
+  const lastForced = useRef(forceView);
+  if (forceView !== lastForced.current) {
+    lastForced.current = forceView;
+  }
   // Dirección de la transición: entrar a una sección desliza desde la derecha; volver, desde la izquierda.
   const moved = useRef(false);
+  if (forceView && forceView !== "home") moved.current = true;
   const anim = !moved.current ? "" : view === "home" ? "anim-in-left" : "anim-in-right";
   const tracker = useTracker(page.slug, mode === "live");
   const img = resolveImage ?? imgSrc;
@@ -86,7 +96,7 @@ export function PublicView({ page, mode = "live", resolveImage }: Props) {
     <div ref={rootRef} style={style} className="anim-fade min-h-full w-full overflow-x-hidden" data-template={theme.template.id}>
       <div key={view} className={`mx-auto flex min-h-dvh w-full max-w-[480px] flex-col ${anim}`}>
         {view === "home" && (
-          <Home page={page} displayClass={displayClass} img={img} go={go} tracker={tracker} template={theme.template.id} live={mode === "live"} />
+          <Home page={page} displayClass={displayClass} img={img} go={go} tracker={tracker} template={theme.template.id} live={mode === "live"} highlight={highlight} />
         )}
         {view === "menu" && <MenuSection page={page} displayClass={displayClass} img={img} back={() => go("home")} mode={mode} />}
         {view === "social" && <SocialSection page={page} displayClass={displayClass} back={() => go("home")} tracker={tracker} />}
@@ -106,6 +116,7 @@ function Home({
   tracker,
   template,
   live,
+  highlight,
 }: {
   page: PublicPage;
   displayClass: string;
@@ -114,6 +125,7 @@ function Home({
   tracker: Tracker;
   template: string;
   live: boolean;
+  highlight?: ButtonKey;
 }) {
   const hasCover = !!page.coverImageId;
   // En vistas previas (admin, landing) el nombre no es el h1 de la página que lo contiene.
@@ -153,7 +165,7 @@ function Home({
         <nav aria-label="Accesos" className="mt-7 flex flex-col gap-3">
           {page.buttons.map((key, i) => (
             <div key={key} className="anim-rise" style={{ "--i": i + 2 } as CSSProperties}>
-              <LinkButton k={key} page={page} go={go} tracker={tracker} />
+              <LinkButton k={key} page={page} go={go} tracker={tracker} highlighted={highlight === key} />
             </div>
           ))}
           {page.buttons.length === 0 && (
@@ -210,7 +222,7 @@ const ICONS: Record<ButtonKey, React.ReactNode> = {
   ),
 };
 
-function LinkButton({ k, page, go, tracker }: { k: ButtonKey; page: PublicPage; go: (v: View) => void; tracker: Tracker }) {
+function LinkButton({ k, page, go, tracker, highlighted }: { k: ButtonKey; page: PublicPage; go: (v: View) => void; tracker: Tracker; highlighted?: boolean }) {
   const cls =
     "flex min-h-14 w-full items-center gap-3 border-[1.5px] px-5 text-left text-[17px] font-medium transition-transform active:scale-[0.985]";
   const st: CSSProperties = {
@@ -218,6 +230,8 @@ function LinkButton({ k, page, go, tracker }: { k: ButtonKey; page: PublicPage; 
     color: "var(--btn-text)",
     borderColor: "var(--btn-border)",
     borderRadius: "var(--radius)",
+    ...(highlighted ? { outline: "3px solid #FA1F6F", outlineOffset: "3px", transform: "scale(1.03)" } : {}),
+    transition: "transform .35s cubic-bezier(.22,1,.36,1), outline-color .35s",
   };
   const content = (
     <>

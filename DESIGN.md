@@ -74,6 +74,18 @@ Móvil primero desde 375 px. Objetivos táctiles de 44 px. La vista previa en vi
 | Intensidad de movimiento | 4 | 7 | Panel: movimiento funcional (entrar a cada sección, hojas, listas, gráficas, confirmaciones). Landing: narrativa con el toque NFC y el admin animándose solo |
 | Densidad visual | 6 | 3 | Uso diario del dueño en celular; la landing necesita aire |
 
+## Landing: concepto "La mesa" (rediseño del 3 de noviembre de 2026)
+La landing es una escena, no una lista de secciones. Fondo oscuro de hora de servicio con grano y luz cálida de lámpara que se mueve con el scroll; el rosa AMOXTLI® es la única señal (ondas NFC, progreso, acción principal).
+- **Historia con scroll fijo (560vh):** mesa vista desde arriba con la tarjeta "Mesa 12". El scroll es el comensal: el celular entra y toca la tarjeta (ondas), se enciende la página real del negocio, se abre la carta, entra el celular del dueño y marca un platillo como agotado (en el del comensal se apaga en vivo) y al final se resalta "Déjanos tu reseña". Progreso navegable con los cinco momentos.
+- **Párrafo que se enciende palabra por palabra** con el problema que resuelve.
+- **La tarjeta en 3D:** se inclina con el cursor, tiene brillo, se voltea sola una vez y con botón para ver el QR; datos reales en mono.
+- **Carril de plantillas** horizontal que avanza con el scroll vertical (escritorio) o se desliza con el dedo (móvil), con la página real en cada plantilla.
+- **Lo que controla el dueño** en filas editoriales grandes con línea rosa al pasar el cursor.
+- **Instalación** en fondo claro con una línea que se dibuja con el scroll.
+- **Cierre "Acércalo."** donde el cursor emite ondas NFC (único detalle de deleite).
+- Scroll suave con Lenis; encabezado que se oculta al bajar y vuelve al subir.
+- Diales de la landing: composición 8, movimiento 8, densidad 3.
+
 ## Motion
 Decisión del 3 de noviembre de 2026: más movimiento en toda la app, siempre con función.
 - **Landing (motion, 7/10):** título que sube palabra por palabra; teléfono que entra y flota; motion graphic de la tarjeta "Mesa 4" acercándose al celular con ondas NFC en el punto de contacto (ciclo de 4.2 s + 1.6 s de pausa); ondas de fondo que respiran; línea de recorrido que se dibuja (toque → carta → reseña); fila real del admin cambiando precios y agotados sola con su aviso; revelado al hacer scroll en cada bloque; selector de plantilla con píldora que se desliza.

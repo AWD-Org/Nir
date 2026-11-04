@@ -169,3 +169,10 @@
 
 /* Preguntas frecuentes: la respuesta entra suave al abrir */
 details[open] > :not(summary) { animation: rise 0.35s var(--ease-out-soft); }
+
+/* Ondas del cierre de la landing */
+@keyframes nir-ripple {
+  from { transform: scale(0.2); opacity: 0.9; }
+  to { transform: scale(4.5); opacity: 0; }
+}
+.nir-ripple { animation: nir-ripple 1.6s cubic-bezier(0.22, 1, 0.36, 1) forwards; }

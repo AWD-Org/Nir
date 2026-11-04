@@ -3,54 +3,32 @@ import "@fontsource-variable/instrument-sans";
 import "@fontsource/young-serif";
 import "@fontsource-variable/schibsted-grotesk";
 import Link from "next/link";
-import { AdminMock } from "@/components/landing/admin-mock";
-import { DemoPhone } from "@/components/landing/demo-phone";
-import { DrawLine } from "@/components/landing/draw-line";
-import { MotionProvider, Reveal, WordsReveal } from "@/components/motion/reveal";
-import { Logo, NirMark } from "@/components/ui/logo";
+import { Card3D } from "@/components/landing/card-3d";
+import { ControlRows } from "@/components/landing/control-rows";
+import { Grain } from "@/components/landing/grain";
+import { InstallLine } from "@/components/landing/install-line";
+import { RippleField } from "@/components/landing/ripple-field";
+import { ScrollWords } from "@/components/landing/scroll-words";
+import { SiteHeader } from "@/components/landing/site-header";
+import { SmoothScroll } from "@/components/landing/smooth-scroll";
+import { Story } from "@/components/landing/story";
+import { TemplatesRail } from "@/components/landing/templates-rail";
+import { MotionProvider, Reveal } from "@/components/motion/reveal";
 import { kitWhatsappUrl, SITE_URL } from "@/lib/domain/links";
 
 const FAQ = [
-  {
-    q: "¿Mis clientes tienen que descargar una app?",
-    a: "No. Acercan el celular a la tarjeta o escanean su QR y se abre tu página en el navegador.",
-  },
-  {
-    q: "¿Funciona con cualquier celular?",
-    a: "El NFC funciona en iPhone XS o posterior y en Android con NFC. Para el resto, cada tarjeta trae un QR de respaldo.",
-  },
-  {
-    q: "¿Puedo cambiar precios yo mismo?",
-    a: "Sí. Desde tu celular cambias precios, marcas agotados, subes fotos y ajustas tu página. Se actualiza en segundos.",
-  },
-  {
-    q: "¿Qué pasa si se pierde una tarjeta?",
-    a: "La desactivamos al instante para que deje de funcionar y te hacemos una de reposición.",
-  },
-  {
-    q: "¿Ustedes filtran las reseñas?",
-    a: "No. El botón de reseña se muestra igual a todos tus comensales, como pide Google.",
-  },
+  { q: "¿Mis clientes tienen que descargar una app?", a: "No. Acercan el celular a la tarjeta o escanean su QR y tu página se abre en el navegador." },
+  { q: "¿Funciona con cualquier celular?", a: "El NFC funciona en iPhone XS o posterior y en Android con NFC. Para el resto, cada tarjeta trae un QR de respaldo." },
+  { q: "¿Puedo cambiar precios yo mismo?", a: "Sí. Desde tu celular cambias precios, marcas agotados, subes fotos y ajustas tu página. Se actualiza en segundos." },
+  { q: "¿Qué pasa si se pierde una tarjeta?", a: "La desactivamos al instante para que deje de funcionar y te hacemos una de reposición." },
+  { q: "¿Ustedes filtran las reseñas?", a: "No. El botón de reseña se muestra igual a todos tus comensales, como pide Google." },
 ];
 
 const jsonLd = {
   "@context": "https://schema.org",
   "@graph": [
-    {
-      "@type": "Organization",
-      "@id": "https://amoxtli.tech/#org",
-      name: "AMOXTLI",
-      url: "https://amoxtli.tech",
-      email: "hello@amoxtli.tech",
-    },
-    {
-      "@type": "WebSite",
-      "@id": `${SITE_URL}/#website`,
-      url: SITE_URL,
-      name: "AMOXTLI Nir",
-      inLanguage: "es-MX",
-      publisher: { "@id": "https://amoxtli.tech/#org" },
-    },
+    { "@type": "Organization", "@id": "https://amoxtli.tech/#org", name: "AMOXTLI", url: "https://amoxtli.tech", email: "hello@amoxtli.tech" },
+    { "@type": "WebSite", "@id": `${SITE_URL}/#website`, url: SITE_URL, name: "AMOXTLI Nir", inLanguage: "es-MX", publisher: { "@id": "https://amoxtli.tech/#org" } },
     {
       "@type": "SoftwareApplication",
       "@id": `${SITE_URL}/#app`,
@@ -60,11 +38,7 @@ const jsonLd = {
       description: "Tarjetas NFC por mesa con carta digital, reseñas de Google, redes sociales y Wi-Fi para restaurantes, bares y cafeterías.",
       publisher: { "@id": "https://amoxtli.tech/#org" },
     },
-    {
-      "@type": "FAQPage",
-      "@id": `${SITE_URL}/#faq`,
-      mainEntity: FAQ.map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: f.a } })),
-    },
+    { "@type": "FAQPage", "@id": `${SITE_URL}/#faq`, mainEntity: FAQ.map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: f.a } })) },
   ],
 };
 
@@ -72,162 +46,135 @@ export default function Landing() {
   const kit = kitWhatsappUrl();
   return (
     <MotionProvider>
-    <div className="bg-surface">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-
-      <header className="sticky top-0 z-40 border-b border-line/70 bg-surface/90 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center gap-6 px-4 py-3 md:px-8">
-          <Logo />
-          <nav className="hidden gap-6 text-[15px] text-ink-2 md:flex" aria-label="Principal">
-            <a href="#como-funciona" className="hover:text-ink">Cómo funciona</a>
-            <a href="#para-el-dueno" className="hover:text-ink">Para el dueño</a>
-            <a href="#preguntas" className="hover:text-ink">Preguntas</a>
-          </nav>
-          <div className="ml-auto flex items-center gap-2">
-            <Link href="/entrar" className="btn-ghost min-h-10 px-3 text-[15px]">Entrar</Link>
-            <a href={kit} target="_blank" rel="noopener" className="btn-primary min-h-10 px-4 text-[15px]">Pide tu kit</a>
-          </div>
+      <div className="relative bg-[#0D0D0F] text-[#F4F1EA] selection:bg-[#FA1F6F] selection:text-[#141416]">
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+        <SmoothScroll />
+        <div className="pointer-events-none fixed inset-0 z-[60]" aria-hidden>
+          <Grain />
         </div>
-      </header>
+        <SiteHeader kitUrl={kit} />
 
-      <main>
-        {/* Hero: texto y acción a la izquierda, la página real a la derecha */}
-        <section className="overflow-hidden">
-          <div className="mx-auto grid max-w-6xl items-center gap-12 px-4 pb-20 pt-12 md:px-8 lg:grid-cols-12 lg:gap-8 lg:pb-28 lg:pt-20">
-            <div className="lg:col-span-7">
-              <h1 className="max-w-[16ch] text-[44px] font-semibold leading-[1.02] tracking-[-0.02em] sm:text-[56px] lg:text-[64px]">
-                <WordsReveal text="Tu carta y tus reseñas, a un toque de cada mesa" />
-              </h1>
-              <Reveal delay={0.45} y={16}>
-              <p className="mt-6 max-w-[52ch] text-[19px] leading-relaxed text-ink-2">
-                Ponemos una tarjeta Nir en cada mesa de tu restaurante, bar o cafetería. El comensal acerca su celular y abre tu carta, tu enlace para reseñas de Google, tus redes y el Wi-Fi. Tú cambias precios y agotados desde tu teléfono.
-              </p>
-              <div className="mt-9 flex flex-wrap gap-3">
-                <a href={kit} target="_blank" rel="noopener" className="btn-primary min-h-12 px-6 text-[16px]">Pide tu kit por WhatsApp</a>
-                <Link href="/registro" className="btn-secondary min-h-12 px-6 text-[16px]">Arma tu carta gratis</Link>
+        <main>
+          <Story kitUrl={kit} />
+
+          <section className="mx-auto max-w-[1280px] px-5 py-32 md:px-10 md:py-48">
+            <ScrollWords
+              className="max-w-[24ch] text-[clamp(32px,4.6vw,64px)] font-semibold leading-[1.08] tracking-[-0.025em]"
+              text="Un QR pegado en la mesa no alcanza. Tus clientes quieren la carta al día, el Wi-Fi sin preguntar y dejarte una reseña mientras siguen ahí. Nir hace las tres cosas con un toque."
+            />
+          </section>
+
+          <section id="la-tarjeta" className="scroll-mt-20 border-t border-[#F4F1EA]/10">
+            <div className="mx-auto grid max-w-[1280px] items-center gap-16 px-5 py-28 md:px-10 lg:grid-cols-12 lg:py-40">
+              <div className="lg:col-span-7">
+                <Card3D />
               </div>
-              <p className="mt-4 text-[15px] text-ink-2">Puedes armar tu página desde hoy; se publica cuando instalamos tus tarjetas.</p>
+              <div className="lg:col-span-5">
+                <Reveal>
+                  <h2 className="text-[clamp(36px,4.6vw,64px)] font-semibold leading-[0.95] tracking-[-0.03em]">Una tarjeta por mesa. Nada más que explicar.</h2>
+                </Reveal>
+                <Reveal delay={0.1}>
+                  <p className="mt-6 text-[17px] leading-relaxed text-[#F4F1EA]/65">
+                    La grabamos una sola vez con la dirección de tu negocio y la bloqueamos para que nadie la cambie. Lleva tu logo, el número de mesa y un QR por si el celular no tiene NFC.
+                  </p>
+                </Reveal>
+                <dl className="mt-10 divide-y divide-[#F4F1EA]/10 border-y border-[#F4F1EA]/10 text-[15px]">
+                  {[
+                    ["Tamaño", "85.6 × 54 mm"],
+                    ["Lectura", "iPhone XS o posterior y Android con NFC"],
+                    ["Respaldo", "QR impreso en el reverso"],
+                    ["Grabado", "una vez, bloqueada por AMOXTLI®"],
+                  ].map(([k, v], i) => (
+                    <Reveal key={k} delay={0.15 + i * 0.06} y={10} className="flex items-baseline justify-between gap-6 py-3.5">
+                      <dt className="text-[#F4F1EA]/50">{k}</dt>
+                      <dd className="text-right font-mono text-[14px]">{v}</dd>
+                    </Reveal>
+                  ))}
+                </dl>
+              </div>
+            </div>
+          </section>
+
+          <div id="plantillas" className="scroll-mt-0 border-t border-[#F4F1EA]/10">
+            <TemplatesRail />
+          </div>
+
+          <section className="border-t border-[#F4F1EA]/10">
+            <div className="mx-auto max-w-[1280px] px-5 py-28 md:px-10 lg:py-40">
+              <Reveal>
+                <h2 className="max-w-[18ch] text-[clamp(36px,5vw,72px)] font-semibold leading-[0.95] tracking-[-0.03em]">Tú lo controlas desde el celular.</h2>
               </Reveal>
+              <ControlRows />
             </div>
-            <div className="lg:col-span-5">
-              <DemoPhone />
+          </section>
+
+          <section id="instalacion" className="scroll-mt-20 border-t border-[#F4F1EA]/10 bg-[#F4F1EA] text-[#141416]">
+            <div className="mx-auto max-w-[1280px] px-5 py-28 md:px-10 lg:py-36">
+              <Reveal>
+                <h2 className="max-w-[20ch] text-[clamp(36px,5vw,72px)] font-semibold leading-[0.95] tracking-[-0.03em]">Nosotros llegamos, instalamos y te dejamos listo.</h2>
+              </Reveal>
+              <InstallLine tone="light" />
             </div>
-          </div>
-        </section>
+          </section>
 
-        {/* Cómo funciona */}
-        <section id="como-funciona" className="scroll-mt-20 border-t border-line bg-paper">
-          <div className="mx-auto max-w-6xl px-4 py-20 md:px-8 lg:py-28">
-            <Reveal><h2 className="max-w-[22ch] text-[34px] font-semibold leading-tight tracking-[-0.01em] sm:text-[40px]">En la mesa no hay nada que explicar</h2></Reveal>
-            <DrawLine className="mt-12" />
-            <div className="mt-4 grid gap-px overflow-hidden rounded-xl border border-line bg-line md:grid-cols-3">
-              <Reveal delay={0.1} className="bg-surface"><Moment title="Acercan el celular" body="La tarjeta lleva el nombre de tu negocio y el número de mesa. Con un toque se abre tu página; sin app ni registro." /></Reveal>
-              <Reveal delay={0.25} className="bg-surface"><Moment title="Ven tu carta al día" body="Por categorías, con fotos, variantes y lo que ya se acabó en gris. Si cambias un precio, se ve en segundos." /></Reveal>
-              <Reveal delay={0.4} className="bg-surface"><Moment title="Te dejan su reseña" body="Un botón directo a tu perfil de Google, igual para todos, justo cuando la experiencia está fresca." /></Reveal>
+          <section id="preguntas" className="scroll-mt-20">
+            <div className="mx-auto grid max-w-[1280px] gap-12 px-5 py-28 md:px-10 lg:grid-cols-12 lg:py-36">
+              <Reveal className="lg:col-span-4">
+                <h2 className="text-[clamp(32px,3.6vw,52px)] font-semibold leading-[0.98] tracking-[-0.025em]">Preguntas frecuentes</h2>
+              </Reveal>
+              <div className="divide-y divide-[#F4F1EA]/12 border-y border-[#F4F1EA]/12 lg:col-span-8">
+                {FAQ.map((f) => (
+                  <details key={f.q} className="group py-6">
+                    <summary className="flex cursor-pointer list-none items-center justify-between gap-6 text-[19px] font-medium">
+                      {f.q}
+                      <span className="relative h-4 w-4 shrink-0" aria-hidden>
+                        <span className="absolute left-0 top-1/2 h-px w-4 bg-current" />
+                        <span className="absolute left-1/2 top-0 h-4 w-px bg-current transition-transform duration-300 group-open:rotate-90 group-open:scale-y-0" />
+                      </span>
+                    </summary>
+                    <p className="mt-4 max-w-[60ch] text-[16px] leading-relaxed text-[#F4F1EA]/65">{f.a}</p>
+                  </details>
+                ))}
+              </div>
             </div>
-          </div>
-        </section>
+          </section>
 
-        {/* Para el dueño */}
-        <section id="para-el-dueno" className="scroll-mt-20">
-          <div className="mx-auto grid max-w-6xl gap-12 px-4 py-20 md:px-8 lg:grid-cols-2 lg:items-center lg:py-28">
-            <div>
-              <Reveal><h2 className="max-w-[20ch] text-[34px] font-semibold leading-tight tracking-[-0.01em] sm:text-[40px]">Lo controlas tú, entre servicio y servicio</h2></Reveal>
-              <ul className="mt-8 divide-y divide-line border-y border-line">
-                <Feature i={0} title="Agotado con un toque" body="Apaga un platillo cuando se acaba y vuelve a prenderlo mañana." />
-                <Feature i={1} title="Precios sin reimprimir" body="Cambia el precio desde la lista, sin abrir cada producto." />
-                <Feature i={2} title="Tu página con tu estilo" body="Tres plantillas, tus colores y tu logo. Ves el resultado mientras lo editas." />
-                <Feature i={3} title="Sabes qué mesas te visitan" body="Toques por día, hora y mesa, y qué botones usan. Sin datos personales de tus comensales." />
-              </ul>
-            </div>
-            <Reveal delay={0.15} y={32}><AdminMock /></Reveal>
-          </div>
-        </section>
+          <RippleField className="border-t border-[#F4F1EA]/10">
+            <section className="mx-auto max-w-[1280px] px-5 py-32 md:px-10 lg:py-48">
+              <Reveal>
+                <h2 className="text-[clamp(64px,13vw,200px)] font-semibold leading-[0.85] tracking-[-0.05em]">Acércalo.</h2>
+              </Reveal>
+              <div className="mt-10 flex flex-col gap-8 md:flex-row md:items-end md:justify-between">
+                <p className="max-w-[40ch] text-[18px] leading-relaxed text-[#F4F1EA]/65">
+                  Escríbenos y vamos a tu negocio. En la primera visita dejamos tu carta lista; en 48 horas, tus tarjetas en las mesas.
+                </p>
+                <div className="flex flex-wrap gap-3">
+                  <a href={kit} target="_blank" rel="noopener" className="inline-flex min-h-12 items-center rounded-full bg-[#FA1F6F] px-7 text-[16px] font-semibold text-[#141416] transition-transform hover:scale-[1.03]">
+                    Pide tu kit por WhatsApp
+                  </a>
+                  <Link href="/registro" className="inline-flex min-h-12 items-center rounded-full border border-[#F4F1EA]/25 px-7 text-[16px] font-medium transition-colors hover:border-[#F4F1EA]/60">
+                    Arma tu carta gratis
+                  </Link>
+                </div>
+              </div>
+            </section>
+          </RippleField>
+        </main>
 
-        {/* El kit */}
-        <section className="border-t border-line bg-ink text-white">
-          <div className="mx-auto grid max-w-6xl gap-10 px-4 py-20 md:px-8 lg:grid-cols-12 lg:py-24">
-            <div className="lg:col-span-5">
-              <Reveal><h2 className="text-[34px] font-semibold leading-tight tracking-[-0.01em] sm:text-[40px]">Nosotros instalamos todo</h2></Reveal>
-              <p className="mt-4 text-[17px] leading-relaxed text-white/75">En la primera visita creamos tu cuenta y tus primeros productos contigo. En las siguientes 48 horas llevamos e instalamos las tarjetas.</p>
-            </div>
-            <dl className="grid gap-x-10 gap-y-8 sm:grid-cols-2 lg:col-span-7">
-              <KitItem i={0} title="Una tarjeta por mesa" body="NFC con QR de respaldo, tu logo y el número de mesa. Grabada y bloqueada por AMOXTLI®." />
-              <KitItem i={1} title="Tu página y tu carta" body="En nir.amoxtli.tech con el nombre de tu negocio, lista para compartir en redes." />
-              <KitItem i={2} title="Admin desde el celular" body="Carta, enlaces, Wi-Fi, diseño y estadísticas, con correo o cuenta de Google." />
-              <KitItem i={3} title="Soporte directo" body="Si pierdes una tarjeta, la desactivamos al momento y te hacemos otra." />
-            </dl>
-          </div>
-        </section>
-
-        {/* Preguntas */}
-        <section id="preguntas" className="scroll-mt-20">
-          <div className="mx-auto grid max-w-6xl gap-10 px-4 py-20 md:px-8 lg:grid-cols-12 lg:py-28">
-            <Reveal className="lg:col-span-4"><h2 className="text-[34px] font-semibold leading-tight tracking-[-0.01em] sm:text-[40px]">Preguntas frecuentes</h2></Reveal>
-            <div className="divide-y divide-line border-y border-line lg:col-span-8">
-              {FAQ.map((f) => (
-                <details key={f.q} className="group py-5">
-                  <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-[18px] font-medium">
-                    {f.q}
-                    <span className="text-2xl leading-none text-ink-3 transition-transform group-open:rotate-45" aria-hidden>+</span>
-                  </summary>
-                  <p className="mt-3 max-w-[60ch] text-[16px] leading-relaxed text-ink-2">{f.a}</p>
-                </details>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section className="border-t border-line bg-paper">
-          <div className="mx-auto flex max-w-6xl flex-col items-start gap-6 px-4 py-16 md:flex-row md:items-center md:justify-between md:px-8">
-            <Reveal><h2 className="max-w-[24ch] text-[28px] font-semibold leading-tight sm:text-[32px]">¿Quieres Nir en tus mesas?</h2></Reveal>
-            <a href={kit} target="_blank" rel="noopener" className="btn-primary min-h-12 px-6 text-[16px]">Pide tu kit por WhatsApp</a>
-          </div>
-        </section>
-      </main>
-
-      <footer className="border-t border-line">
-        <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-8 text-[15px] text-ink-2 md:flex-row md:items-center md:justify-between md:px-8">
-          <div className="flex items-center gap-2">
-            <NirMark className="h-5 w-5" />
+        <footer className="border-t border-[#F4F1EA]/10">
+          <div className="mx-auto flex max-w-[1280px] flex-col gap-4 px-5 py-8 text-[14px] text-[#F4F1EA]/55 md:flex-row md:items-center md:justify-between md:px-10">
             <span>Nir es un producto de AMOXTLI®</span>
+            <nav className="flex flex-wrap gap-x-6 gap-y-2" aria-label="Legal">
+              <Link href="/terminos" className="hover:text-[#F4F1EA]">Términos de servicio</Link>
+              <Link href="/privacidad" className="hover:text-[#F4F1EA]">Aviso de privacidad</Link>
+              <a href="mailto:hello@amoxtli.tech" className="hover:text-[#F4F1EA]">hello@amoxtli.tech</a>
+            </nav>
+            <p>
+              Desarrollado por <a href="https://amoxtli.tech" className="font-medium text-[#F4F1EA] hover:underline">AMOXTLI®</a>
+            </p>
           </div>
-          <nav className="flex flex-wrap gap-x-6 gap-y-2" aria-label="Legal">
-            <Link href="/terminos" className="hover:text-ink">Términos de servicio</Link>
-            <Link href="/privacidad" className="hover:text-ink">Aviso de privacidad</Link>
-            <a href="mailto:hello@amoxtli.tech" className="hover:text-ink">hello@amoxtli.tech</a>
-          </nav>
-          <p>Desarrollado por <a href="https://amoxtli.tech" className="font-medium text-ink hover:underline">AMOXTLI®</a></p>
-        </div>
-      </footer>
-    </div>
+        </footer>
+      </div>
     </MotionProvider>
-  );
-}
-
-function Moment({ title, body }: { title: string; body: string }) {
-  return (
-    <div className="h-full p-7">
-      <h3 className="text-[20px] font-semibold">{title}</h3>
-      <p className="mt-2 text-[16px] leading-relaxed text-ink-2">{body}</p>
-    </div>
-  );
-}
-
-function Feature({ title, body, i }: { title: string; body: string; i: number }) {
-  return (
-    <Reveal as="li" className="py-5" delay={0.08 * i} y={14}>
-      <h3 className="text-[18px] font-semibold">{title}</h3>
-      <p className="mt-1 text-[16px] leading-relaxed text-ink-2">{body}</p>
-    </Reveal>
-  );
-}
-
-function KitItem({ title, body, i }: { title: string; body: string; i: number }) {
-  return (
-    <Reveal delay={0.1 * i} y={18}>
-      <dt className="text-[18px] font-semibold">{title}</dt>
-      <dd className="mt-1.5 text-[16px] leading-relaxed text-white/75">{body}</dd>
-    </Reveal>
   );
 }
