@@ -10,8 +10,6 @@ import { requireOwner } from "@/lib/server/session";
 export const metadata = { title: "Estadísticas" };
 
 const RANGES = [7, 30, 90] as const;
-const MONTHS = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
-const fmtDay = (k: string) => `${Number(k.slice(6, 8))} ${MONTHS[Number(k.slice(4, 6)) - 1]}`;
 
 export default async function Page({ searchParams }: { searchParams: Promise<{ r?: string }> }) {
   const { tenant } = await requireOwner();
@@ -51,7 +49,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ r
       <section className="panel p-5">
         <h2 className="mb-6 font-semibold">Visitas por día</h2>
         {s.total ? (
-          <Bars data={s.byDay.map((d) => ({ label: d.date, value: d.visits }))} label="Día" format={fmtDay} tickEvery={range === 7 ? 1 : range === 30 ? 5 : 15} />
+          <Bars data={s.byDay.map((d) => ({ label: d.date, value: d.visits }))} label="Día" kind="day" tickEvery={range === 7 ? 1 : range === 30 ? 5 : 15} />
         ) : (
           <Empty />
         )}

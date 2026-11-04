@@ -7,17 +7,25 @@ import { useState } from "react";
  * Barras delgadas, extremo redondeado de 4px anclado a la base, 2px de separación,
  * tooltip al pasar el cursor o enfocar, y tabla equivalente para lectores de pantalla.
  */
+const MONTHS = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+const FORMATS = {
+  day: (k: string) => `${Number(k.slice(6, 8))} ${MONTHS[Number(k.slice(4, 6)) - 1]}`,
+  plain: (k: string) => k,
+};
+
 export function Bars({
   data,
   label,
-  format = (l) => l,
+  kind = "plain",
   tickEvery = 1,
 }: {
   data: { label: string; value: number }[];
   label: string;
-  format?: (label: string) => string;
+  /** "day" convierte AAAAMMDD en "3 nov". Se pasa como texto porque viene de un Server Component. */
+  kind?: keyof typeof FORMATS;
   tickEvery?: number;
 }) {
+  const format = FORMATS[kind];
   const [hover, setHover] = useState<number | null>(null);
   const max = Math.max(1, ...data.map((d) => d.value));
   return (
