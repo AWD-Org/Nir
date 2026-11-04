@@ -25,6 +25,18 @@ export async function POST(req: Request) {
     const record = await auth.getUser(decoded.uid);
     const role = ((decoded.role as Role | undefined) ?? "owner") as Role;
 
+    // Arranque: los correos de SUPERADMIN_EMAILS (verificados, por ejemplo con Google) reciben el rol
+    // de superadmin la primera vez que entran. El cliente renueva su token y vuelve a pedir la sesión.
+    const supers = (process.env.SUPERADMIN_EMAILS ?? "").split(",").map((e) => e.trim().toLowerCase()).filter(Boolean);
+    if (role !== "superadmin" && record.emailVerified && record.email && supers.includes(record.email.toLowerCase())) {
+      const hasBusiness = (await col.owners().doc(decoded.uid).get()).exists;
+      if (!hasBusiness) {
+        await auth.setCustomUserClaims(decoded.uid, { role: "superadmin" });
+        await col.users().doc(decoded.uid).set({ email: record.email, role: "superadmin", tenantId: null }, { merge: true });
+        return NextResponse.json({ refresh: true });
+      }
+    }
+
     const ref = col.users().doc(decoded.uid);
     const snap = await ref.get();
     const now = nowTs();

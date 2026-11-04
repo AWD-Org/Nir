@@ -32,15 +32,16 @@ export function authMessage(e: unknown): string {
 }
 
 /** Intercambia el ID token por la cookie de sesión del servidor. */
-export async function startSession(user: User, opts: { acceptTerms?: boolean; displayName?: string; force?: boolean } = {}) {
+export async function startSession(user: User, opts: { acceptTerms?: boolean; displayName?: string; force?: boolean; retried?: boolean } = {}) {
   const idToken = await user.getIdToken(opts.force ?? true);
   const res = await fetch("/api/session", {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ idToken, acceptTerms: opts.acceptTerms, displayName: opts.displayName }),
   });
-  const data = (await res.json()) as { next?: string; error?: string };
+  const data = (await res.json()) as { next?: string; error?: string; refresh?: boolean };
   if (!res.ok) throw new Error(`Nir:${data.error ?? "No pudimos iniciar tu sesión."}`);
+  if (data.refresh && !opts.retried) return startSession(user, { ...opts, force: true, retried: true });
   return data.next ?? "/admin";
 }
 
