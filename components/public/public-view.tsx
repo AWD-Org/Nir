@@ -79,7 +79,7 @@ export function PublicView({ page, mode = "live", resolveImage }: Props) {
     <div ref={rootRef} style={style} className="min-h-full w-full" data-template={theme.template.id}>
       <div className="mx-auto flex min-h-dvh w-full max-w-[480px] flex-col">
         {view === "home" && (
-          <Home page={page} displayClass={displayClass} img={img} go={go} tracker={tracker} template={theme.template.id} />
+          <Home page={page} displayClass={displayClass} img={img} go={go} tracker={tracker} template={theme.template.id} live={mode === "live"} />
         )}
         {view === "menu" && <MenuSection page={page} displayClass={displayClass} img={img} back={() => go("home")} mode={mode} />}
         {view === "social" && <SocialSection page={page} displayClass={displayClass} back={() => go("home")} tracker={tracker} />}
@@ -98,6 +98,7 @@ function Home({
   go,
   tracker,
   template,
+  live,
 }: {
   page: PublicPage;
   displayClass: string;
@@ -105,8 +106,11 @@ function Home({
   go: (v: View) => void;
   tracker: Tracker;
   template: string;
+  live: boolean;
 }) {
   const hasCover = !!page.coverImageId;
+  // En vistas previas (admin, landing) el nombre no es el h1 de la página que lo contiene.
+  const Title = live ? "h1" : "p";
   return (
     <>
       <header className="relative">
@@ -134,9 +138,9 @@ function Home({
       </header>
 
       <main className="flex flex-1 flex-col px-6 pb-8 pt-4">
-        <h1 className={`text-[34px] leading-[1.05] ${displayClass}`} style={{ fontFamily: "var(--display)", fontWeight: template === "noche" ? 800 : 400 }}>
+        <Title className={`text-[34px] leading-[1.05] ${displayClass}`} style={{ fontFamily: "var(--display)", fontWeight: template === "noche" ? 800 : 400 }}>
           {page.name}
-        </h1>
+        </Title>
         {page.profile.hours && <p className="mt-2 text-[16px] text-[var(--muted)]">{page.profile.hours}</p>}
 
         <nav aria-label="Accesos" className="mt-7 flex flex-col gap-3">
@@ -248,9 +252,9 @@ function SectionBar({ title, back, displayClass }: { title: string; back: () => 
           <path d="m15 6-6 6 6 6" />
         </svg>
       </button>
-      <h1 className={`text-[24px] leading-tight ${displayClass}`} style={{ fontFamily: "var(--display)", fontWeight: displayClass ? 800 : 400 }}>
+      <h2 className={`text-[24px] leading-tight ${displayClass}`} style={{ fontFamily: "var(--display)", fontWeight: displayClass ? 800 : 400 }}>
         {title}
-      </h1>
+      </h2>
     </div>
   );
 }
