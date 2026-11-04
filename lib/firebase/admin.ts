@@ -15,7 +15,7 @@ function adminApp(): App {
     app = initializeApp({ credential: cert(sa), projectId: sa.project_id });
   } else {
     // Emulador local o entorno con credenciales por defecto.
-    app = initializeApp({ projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "demo-nir" });
+    app = initializeApp({ projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "nir-app-26fa6" });
   }
   return app;
 }
