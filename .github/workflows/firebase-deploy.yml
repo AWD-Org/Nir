@@ -1,0 +1,22 @@
+name: Reglas e índices de Firestore
+
+# Despliega firestore.rules y firestore.indexes.json cuando cambian en main.
+# Requiere el secreto FIREBASE_SERVICE_ACCOUNT_BASE64 (cuenta con rol "Firebase Rules Admin" y "Cloud Datastore Index Admin").
+on:
+  push:
+    branches: [main]
+    paths: [firestore.rules, firestore.indexes.json]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - name: Desplegar a nir-prod
+        run: |
+          echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT_BASE64 }}" | base64 -d > "$RUNNER_TEMP/sa.json"
+          GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/sa.json" npx firebase deploy --only firestore:rules,firestore:indexes --project prod --non-interactive

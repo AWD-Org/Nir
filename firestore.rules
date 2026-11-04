@@ -1,0 +1,84 @@
+rules_version = '2';
+
+// Reglas de seguridad de AMOXTLI Nir.
+// El servidor (Admin SDK) no está sujeto a estas reglas: crea negocios, publica,
+// guarda imágenes, registra toques y hace todo lo que es de AMOXTLI®.
+// Estas reglas protegen cualquier acceso directo desde un navegador.
+service cloud.firestore {
+  match /databases/{db}/documents {
+    function signedIn() { return request.auth != null; }
+    function role() { return request.auth.token.role; }
+    function staff() { return signedIn() && role() in ['seller', 'superadmin']; }
+    function myTenant(t) { return signedIn() && request.auth.token.tenantId == t; }
+    function onlyChanges(fields) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(fields);
+    }
+    function writable(t) {
+      // Una cuenta suspendida o cancelada queda en solo lectura para el dueño.
+      return get(/databases/$(db)/documents/tenants/$(t)).data.status in ['preview', 'active', 'due', 'grace'];
+    }
+
+    match /users/{uid} {
+      allow read: if (signedIn() && request.auth.uid == uid) || staff();
+      allow update: if signedIn() && request.auth.uid == uid
+        && onlyChanges(['displayName', 'lastLoginAt']);
+    }
+
+    match /owners/{uid} {
+      allow read: if staff();
+    }
+
+    match /tenants/{t} {
+      allow read: if myTenant(t) || staff();
+      allow update: if staff()
+        || (myTenant(t) && writable(t)
+            && onlyChanges(['profile', 'links', 'wifi', 'buttons', 'theme', 'updatedAt']));
+
+      match /menu/{doc} {
+        allow read: if (myTenant(t) || staff()) && doc == 'draft';
+        allow write: if doc == 'draft'
+          && (staff() || (myTenant(t) && writable(t)))
+          && request.resource.data.itemCount is int
+          && request.resource.data.itemCount <= 300;
+      }
+
+      match /public/{doc} {
+        allow read: if (myTenant(t) || staff()) && doc == 'page';
+      }
+    }
+
+    match /slugs/{slug} {
+      allow read: if staff();
+    }
+
+    match /cards/{c} {
+      allow read: if staff() || myTenant(resource.data.tenantId);
+      allow write: if staff();
+    }
+
+    match /payments/{p} {
+      allow read: if staff() || myTenant(resource.data.tenantId);
+      allow write: if staff();
+    }
+
+    match /stats/{s} {
+      allow read: if staff() || myTenant(resource.data.tenantId);
+    }
+
+    match /images/{i} {
+      allow read: if staff();
+    }
+
+    match /auditLog/{e} {
+      allow read: if staff();
+    }
+
+    match /config/{doc} {
+      allow read: if true;
+    }
+
+    match /{rest=**} {
+      allow read, write: if false;
+    }
+  }
+}

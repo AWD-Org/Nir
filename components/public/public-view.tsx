@@ -1,0 +1,527 @@
+"use client";
+
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { BUTTON_LABELS, SOCIAL_LABELS, TAGS } from "@/lib/domain/constants";
+import { formatPrice } from "@/lib/domain/money";
+import { socialHref } from "@/lib/domain/publish";
+import type { ButtonKey, PublicItem, PublicPage, SocialKey } from "@/lib/domain/types";
+import { resolveTheme } from "@/lib/themes";
+import { SocialIcon } from "./social-icons";
+
+type View = "home" | "menu" | "social" | "wifi";
+const HASH: Record<View, string> = { home: "", menu: "#carta", social: "#redes", wifi: "#wifi" };
+const fromHash = (h: string): View => (h === "#carta" ? "menu" : h === "#redes" ? "social" : h === "#wifi" ? "wifi" : "home");
+const TAG_LABEL = Object.fromEntries(TAGS.map((t) => [t.id, t.label]));
+
+export const imgSrc = (id: string, size: "thumb" | "full") => `/img/${id}/${size}`;
+
+interface Props {
+  page: PublicPage;
+  /** live: página real (historial y estadísticas). preview: vista previa del admin o de la landing. */
+  mode?: "live" | "preview";
+  /** Para vistas previas que muestran imágenes aún no guardadas. */
+  resolveImage?: (id: string, size: "thumb" | "full") => string;
+}
+
+export function PublicView({ page, mode = "live", resolveImage }: Props) {
+  const theme = useMemo(() => resolveTheme(page.theme), [page.theme]);
+  const [view, setView] = useState<View>("home");
+  const tracker = useTracker(page.slug, mode === "live");
+  const img = resolveImage ?? imgSrc;
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  // Navegación con el botón "atrás" del celular.
+  useEffect(() => {
+    if (mode !== "live") return;
+    const sync = () => setView(fromHash(location.hash));
+    sync();
+    window.addEventListener("popstate", sync);
+    return () => window.removeEventListener("popstate", sync);
+  }, [mode]);
+
+  const go = useCallback(
+    (v: View) => {
+      if (mode === "live") {
+        if (v === "home") history.back();
+        else history.pushState(null, "", HASH[v]);
+        window.scrollTo({ top: 0 });
+      } else {
+        rootRef.current?.scrollTo?.({ top: 0 });
+      }
+      setView(v);
+    },
+    [mode],
+  );
+
+  const style = {
+    "--bg": theme.bg,
+    "--text": theme.text,
+    "--muted": theme.muted,
+    "--surface": theme.surface,
+    "--line": theme.line,
+    "--btn-bg": theme.buttonBg,
+    "--btn-text": theme.buttonText,
+    "--btn-border": theme.buttonBorder,
+    "--accent": theme.accent,
+    "--header-bg": theme.headerBg,
+    "--header-text": theme.headerText,
+    "--radius": theme.template.radius,
+    "--display": theme.template.displayFont,
+    "--body": theme.template.bodyFont,
+    backgroundColor: theme.bg,
+    color: theme.text,
+    fontFamily: theme.template.bodyFont,
+  } as CSSProperties;
+
+  const displayClass = theme.template.uppercaseDisplay ? "uppercase tracking-[0.01em]" : "";
+
+  return (
+    <div ref={rootRef} style={style} className="min-h-full w-full" data-template={theme.template.id}>
+      <div className="mx-auto flex min-h-dvh w-full max-w-[480px] flex-col">
+        {view === "home" && (
+          <Home page={page} displayClass={displayClass} img={img} go={go} tracker={tracker} template={theme.template.id} />
+        )}
+        {view === "menu" && <MenuSection page={page} displayClass={displayClass} img={img} back={() => go("home")} mode={mode} />}
+        {view === "social" && <SocialSection page={page} displayClass={displayClass} back={() => go("home")} tracker={tracker} />}
+        {view === "wifi" && <WifiSection page={page} displayClass={displayClass} back={() => go("home")} />}
+      </div>
+    </div>
+  );
+}
+
+/* ---------- Inicio tipo Linktree ---------- */
+
+function Home({
+  page,
+  displayClass,
+  img,
+  go,
+  tracker,
+  template,
+}: {
+  page: PublicPage;
+  displayClass: string;
+  img: (id: string, s: "thumb" | "full") => string;
+  go: (v: View) => void;
+  tracker: Tracker;
+  template: string;
+}) {
+  const hasCover = !!page.coverImageId;
+  return (
+    <>
+      <header className="relative">
+        {hasCover ? (
+          <div className="aspect-[16/9] w-full overflow-hidden bg-[var(--surface)]">
+            <img src={img(page.coverImageId!, "full")} alt="" className="h-full w-full object-cover" fetchPriority="high" />
+          </div>
+        ) : (
+          <div className="h-28 w-full" style={{ background: "var(--header-bg)" }} />
+        )}
+        <div className="px-6">
+          <div
+            className="-mt-12 h-24 w-24 overflow-hidden border-4 bg-[var(--surface)]"
+            style={{ borderColor: "var(--bg)", borderRadius: template === "noche" ? "0" : "999px" }}
+          >
+            {page.logoImageId ? (
+              <img src={img(page.logoImageId, "thumb")} alt={`Logo de ${page.name}`} className="h-full w-full object-cover" />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center text-3xl font-semibold" style={{ fontFamily: "var(--display)" }}>
+                {page.name.slice(0, 1)}
+              </div>
+            )}
+          </div>
+        </div>
+      </header>
+
+      <main className="flex flex-1 flex-col px-6 pb-8 pt-4">
+        <h1 className={`text-[34px] leading-[1.05] ${displayClass}`} style={{ fontFamily: "var(--display)", fontWeight: template === "noche" ? 800 : 400 }}>
+          {page.name}
+        </h1>
+        {page.profile.hours && <p className="mt-2 text-[16px] text-[var(--muted)]">{page.profile.hours}</p>}
+
+        <nav aria-label="Accesos" className="mt-7 flex flex-col gap-3">
+          {page.buttons.map((key) => (
+            <LinkButton key={key} k={key} page={page} go={go} tracker={tracker} />
+          ))}
+          {page.buttons.length === 0 && (
+            <p className="text-[16px] text-[var(--muted)]">Este negocio todavía no configura su página.</p>
+          )}
+        </nav>
+
+        <footer className="mt-auto pt-10 text-[15px] leading-relaxed text-[var(--muted)]">
+          {page.profile.address && <p>{page.profile.address}</p>}
+          {page.profile.phone && (
+            <p>
+              <a className="underline underline-offset-4" href={`tel:${page.profile.phone.replace(/\s/g, "")}`}>
+                {page.profile.phone}
+              </a>
+            </p>
+          )}
+          <p className="mt-6 text-[13px] opacity-80">
+            Desarrollado por{" "}
+            <a href="https://nir.amoxtli.tech" className="underline underline-offset-4">
+              AMOXTLI®
+            </a>
+          </p>
+        </footer>
+      </main>
+    </>
+  );
+}
+
+const ICONS: Record<ButtonKey, React.ReactNode> = {
+  menu: (
+    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>
+      <path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z" />
+      <path d="M9 9h6M9 13h6" strokeLinecap="round" />
+    </svg>
+  ),
+  reviews: (
+    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" aria-hidden>
+      <path d="m12 3.5 2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z" />
+    </svg>
+  ),
+  social: (
+    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>
+      <circle cx="6" cy="12" r="2.5" />
+      <circle cx="18" cy="6" r="2.5" />
+      <circle cx="18" cy="18" r="2.5" />
+      <path d="m8.2 10.8 7.6-3.6M8.2 13.2l7.6 3.6" />
+    </svg>
+  ),
+  wifi: (
+    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden>
+      <path d="M2.5 9a14 14 0 0 1 19 0M5.5 12.5a9.5 9.5 0 0 1 13 0M8.8 16a5 5 0 0 1 6.4 0" />
+      <circle cx="12" cy="19.2" r="1" fill="currentColor" />
+    </svg>
+  ),
+};
+
+function LinkButton({ k, page, go, tracker }: { k: ButtonKey; page: PublicPage; go: (v: View) => void; tracker: Tracker }) {
+  const cls =
+    "flex min-h-14 w-full items-center gap-3 border-[1.5px] px-5 text-left text-[17px] font-medium transition-transform active:scale-[0.985]";
+  const st: CSSProperties = {
+    background: "var(--btn-bg)",
+    color: "var(--btn-text)",
+    borderColor: "var(--btn-border)",
+    borderRadius: "var(--radius)",
+  };
+  const content = (
+    <>
+      {ICONS[k]}
+      <span className="flex-1">{BUTTON_LABELS[k]}</span>
+      <svg viewBox="0 0 24 24" className="h-4 w-4 opacity-70" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+        {k === "reviews" ? <path d="M7 17 17 7M9 7h8v8" /> : <path d="m9 6 6 6-6 6" />}
+      </svg>
+    </>
+  );
+  if (k === "reviews" && page.reviews) {
+    return (
+      <a href={page.reviews.url} target="_blank" rel="noopener" className={cls} style={st} onClick={() => tracker.click("reviews")}>
+        {content}
+      </a>
+    );
+  }
+  const view: View = k === "menu" ? "menu" : k === "social" ? "social" : "wifi";
+  return (
+    <button
+      type="button"
+      className={cls}
+      style={st}
+      onClick={() => {
+        tracker.click(k);
+        go(view);
+      }}
+    >
+      {content}
+    </button>
+  );
+}
+
+/* ---------- Secciones ---------- */
+
+function SectionBar({ title, back, displayClass }: { title: string; back: () => void; displayClass: string }) {
+  return (
+    <div className="flex items-center gap-2 px-3 pb-2 pt-3">
+      <button type="button" onClick={back} className="flex h-11 w-11 items-center justify-center" aria-label="Volver al inicio" style={{ borderRadius: "var(--radius)" }}>
+        <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+          <path d="m15 6-6 6 6 6" />
+        </svg>
+      </button>
+      <h1 className={`text-[24px] leading-tight ${displayClass}`} style={{ fontFamily: "var(--display)", fontWeight: displayClass ? 800 : 400 }}>
+        {title}
+      </h1>
+    </div>
+  );
+}
+
+function MenuSection({
+  page,
+  displayClass,
+  img,
+  back,
+  mode,
+}: {
+  page: PublicPage;
+  displayClass: string;
+  img: (id: string, s: "thumb" | "full") => string;
+  back: () => void;
+  mode: "live" | "preview";
+}) {
+  const cats = page.menu.categories;
+  const [active, setActive] = useState(cats[0]?.id);
+  const chipsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (mode !== "live") return;
+    const els = cats.map((c) => document.getElementById(`cat-${c.id}`)).filter(Boolean) as HTMLElement[];
+    const io = new IntersectionObserver(
+      (entries) => {
+        const vis = entries.filter((e) => e.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+        if (vis[0]) setActive(vis[0].target.id.replace("cat-", ""));
+      },
+      { rootMargin: "-120px 0px -60% 0px" },
+    );
+    els.forEach((el) => io.observe(el));
+    return () => io.disconnect();
+  }, [cats, mode]);
+
+  useEffect(() => {
+    const chip = chipsRef.current?.querySelector<HTMLElement>(`[data-cat="${active}"]`);
+    chip?.scrollIntoView({ block: "nearest", inline: "center" });
+  }, [active]);
+
+  const jump = (id: string) => {
+    setActive(id);
+    document.getElementById(`cat-${id}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  return (
+    <>
+      <div className="sticky top-0 z-10" style={{ background: "var(--bg)" }}>
+        <SectionBar title="Carta" back={back} displayClass={displayClass} />
+        {cats.length > 1 && (
+          <div ref={chipsRef} className="flex gap-2 overflow-x-auto px-4 pb-3 [scrollbar-width:none]" role="tablist" aria-label="Categorías">
+            {cats.map((c) => {
+              const on = c.id === active;
+              return (
+                <button
+                  key={c.id}
+                  data-cat={c.id}
+                  role="tab"
+                  aria-selected={on}
+                  onClick={() => jump(c.id)}
+                  className="shrink-0 whitespace-nowrap border px-4 py-2 text-[15px] font-medium"
+                  style={{
+                    borderRadius: "var(--radius)",
+                    borderColor: on ? "var(--text)" : "var(--line)",
+                    background: on ? "var(--text)" : "transparent",
+                    color: on ? "var(--bg)" : "var(--text)",
+                  }}
+                >
+                  {c.name}
+                </button>
+              );
+            })}
+          </div>
+        )}
+        <div className="h-px w-full" style={{ background: "var(--line)" }} />
+      </div>
+
+      <main className="flex-1 px-4 pb-16">
+        {cats.length === 0 && <p className="px-2 py-10 text-[16px] text-[var(--muted)]">La carta se está preparando.</p>}
+        {cats.map((c) => (
+          <section key={c.id} id={`cat-${c.id}`} className="scroll-mt-[120px] pt-6">
+            <h2 className={`px-2 text-[22px] ${displayClass}`} style={{ fontFamily: "var(--display)", fontWeight: displayClass ? 800 : 400 }}>
+              {c.name}
+            </h2>
+            <ul className="mt-2">
+              {c.items.map((i) => (
+                <ItemRow key={i.id} item={i} img={img} />
+              ))}
+            </ul>
+          </section>
+        ))}
+      </main>
+    </>
+  );
+}
+
+function ItemRow({ item, img }: { item: PublicItem; img: (id: string, s: "thumb" | "full") => string }) {
+  const off = !item.available;
+  return (
+    <li className="flex gap-4 border-b px-2 py-4" style={{ borderColor: "var(--line)", opacity: off ? 0.6 : 1 }}>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-baseline justify-between gap-3">
+          <h3 className="text-[17px] font-semibold leading-snug">{item.name}</h3>
+          {item.variants.length === 0 && (
+            <span className="shrink-0 text-[17px] font-semibold tabular-nums" style={{ color: off ? "var(--muted)" : "var(--accent)" }}>
+              {formatPrice(item.priceCents)}
+            </span>
+          )}
+        </div>
+        {item.description && <p className="mt-1 text-[15px] leading-relaxed text-[var(--muted)]">{item.description}</p>}
+        {item.variants.length > 0 && (
+          <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[15px]">
+            {item.variants.map((v) => (
+              <li key={v.name}>
+                <span className="text-[var(--muted)]">{v.name}</span>{" "}
+                <span className="font-semibold tabular-nums" style={{ color: off ? "var(--muted)" : "var(--accent)" }}>
+                  {formatPrice(v.priceCents)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+        {(item.tags.length > 0 || off) && (
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {off && (
+              <span className="border px-2 py-0.5 text-[13px] font-semibold" style={{ borderRadius: "var(--radius)", borderColor: "var(--text)" }}>
+                Agotado
+              </span>
+            )}
+            {item.tags.map((t) => (
+              <span key={t} className="px-2 py-0.5 text-[13px]" style={{ background: "var(--surface)", borderRadius: "var(--radius)" }}>
+                {TAG_LABEL[t] ?? t}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+      {item.imageId && (
+        <img
+          src={img(item.imageId, "thumb")}
+          alt={item.name}
+          loading="lazy"
+          decoding="async"
+          width={88}
+          height={88}
+          className="h-[88px] w-[88px] shrink-0 object-cover"
+          style={{ borderRadius: "calc(var(--radius) / 2)", filter: off ? "grayscale(1)" : undefined }}
+        />
+      )}
+    </li>
+  );
+}
+
+function SocialSection({ page, displayClass, back, tracker }: { page: PublicPage; displayClass: string; back: () => void; tracker: Tracker }) {
+  const entries = Object.entries(page.social) as [SocialKey, string][];
+  return (
+    <>
+      <SectionBar title="Redes sociales" back={back} displayClass={displayClass} />
+      <main className="flex flex-col gap-3 px-6 pb-10 pt-4">
+        {entries.map(([k, v]) => (
+          <a
+            key={k}
+            href={socialHref(k, v)}
+            target="_blank"
+            rel="noopener"
+            onClick={() => tracker.social(k)}
+            className="flex min-h-14 items-center gap-3 border-[1.5px] px-5 text-[17px] font-medium"
+            style={{ borderColor: "var(--line)", borderRadius: "var(--radius)", background: "var(--surface)" }}
+          >
+            <SocialIcon k={k} className="h-6 w-6" />
+            <span className="flex-1">{SOCIAL_LABELS[k]}</span>
+            <span className="max-w-[45%] truncate text-[15px] text-[var(--muted)]">{k === "whatsapp" ? "Enviar mensaje" : v.replace(/^https?:\/\/(www\.)?/, "")}</span>
+          </a>
+        ))}
+      </main>
+    </>
+  );
+}
+
+function WifiSection({ page, displayClass, back }: { page: PublicPage; displayClass: string; back: () => void }) {
+  const [copied, setCopied] = useState(false);
+  if (!page.wifi) return null;
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(page.wifi!.password);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    } catch {
+      /* el usuario puede copiar a mano */
+    }
+  };
+  return (
+    <>
+      <SectionBar title="Wi-Fi" back={back} displayClass={displayClass} />
+      <main className="px-6 pb-10 pt-4">
+        <dl className="border-[1.5px] p-5" style={{ borderColor: "var(--line)", borderRadius: "var(--radius)", background: "var(--surface)" }}>
+          <dt className="text-[15px] text-[var(--muted)]">Red</dt>
+          <dd className="mt-1 break-all text-[20px] font-semibold">{page.wifi.ssid}</dd>
+          {page.wifi.password && (
+            <>
+              <dt className="mt-5 text-[15px] text-[var(--muted)]">Contraseña</dt>
+              <dd className="mt-1 break-all font-mono text-[20px] font-semibold">{page.wifi.password}</dd>
+            </>
+          )}
+        </dl>
+        {page.wifi.password && (
+          <button
+            type="button"
+            onClick={copy}
+            className="mt-4 flex min-h-14 w-full items-center justify-center border-[1.5px] text-[17px] font-medium"
+            style={{ background: "var(--btn-bg)", color: "var(--btn-text)", borderColor: "var(--btn-border)", borderRadius: "var(--radius)" }}
+          >
+            {copied ? "Contraseña copiada" : "Copiar contraseña"}
+          </button>
+        )}
+        <p aria-live="polite" className="sr-only">
+          {copied ? "Contraseña copiada" : ""}
+        </p>
+      </main>
+    </>
+  );
+}
+
+/* ---------- Estadísticas (sin datos personales) ---------- */
+
+interface Tracker {
+  click: (k: ButtonKey) => void;
+  social: (k: SocialKey) => void;
+}
+
+function useTracker(slug: string, enabled: boolean): Tracker {
+  const state = useRef({ visit: false, clicks: {} as Record<string, number>, social: {} as Record<string, number> });
+
+  useEffect(() => {
+    if (!enabled) return;
+    // La tarjeta ya contó la visita y redirige con #t; un enlace directo la cuenta aquí.
+    if (location.hash === "#t") {
+      history.replaceState(null, "", location.pathname);
+    } else {
+      state.current.visit = true;
+    }
+    const flush = () => {
+      const s = state.current;
+      if (!s.visit && !Object.keys(s.clicks).length && !Object.keys(s.social).length) return;
+      const body = JSON.stringify({ slug, visit: s.visit, clicks: s.clicks, social: s.social });
+      // Se envía lo acumulado y se reinicia, para no contar dos veces si el comensal regresa.
+      state.current = { visit: false, clicks: {}, social: {} };
+      if (!navigator.sendBeacon?.("/api/track", new Blob([body], { type: "application/json" }))) {
+        fetch("/api/track", { method: "POST", body, keepalive: true, headers: { "content-type": "application/json" } }).catch(() => {});
+      }
+    };
+    const onHide = () => document.visibilityState === "hidden" && flush();
+    document.addEventListener("visibilitychange", onHide);
+    window.addEventListener("pagehide", flush);
+    return () => {
+      document.removeEventListener("visibilitychange", onHide);
+      window.removeEventListener("pagehide", flush);
+    };
+  }, [slug, enabled]);
+
+  return useMemo(
+    () => ({
+      click: (k) => {
+        if (!enabled) return;
+        state.current.clicks[k] = (state.current.clicks[k] ?? 0) + 1;
+      },
+      social: (k) => {
+        if (!enabled) return;
+        state.current.social[k] = (state.current.social[k] ?? 0) + 1;
+      },
+    }),
+    [enabled],
+  );
+}

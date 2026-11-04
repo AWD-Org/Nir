@@ -1,0 +1,88 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ink: #121214;
+  --color-ink-2: #55555e;
+  --color-ink-3: #74747d;
+  --color-line: #e4e4e8;
+  --color-line-2: #d2d2d8;
+  --color-paper: #f4f4f6;
+  --color-surface: #ffffff;
+  --color-brand: #fa1f6f;
+  --color-brand-strong: #d60451;
+  --color-brand-tint: #fff0f5;
+  --color-ok: #0f7b4b;
+  --color-ok-tint: #e7f6ee;
+  --color-warn: #9a5b00;
+  --color-warn-tint: #fff5e0;
+  --color-bad: #b42318;
+  --color-bad-tint: #fdeceb;
+  --font-sans: "Space Grotesk Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, monospace;
+  --radius-ctl: 0.5rem;
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+  }
+  body {
+    @apply bg-paper text-ink font-sans antialiased;
+    font-size: 16px;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-brand-strong);
+    outline-offset: 2px;
+  }
+  input,
+  textarea,
+  select {
+    font-size: 16px; /* evita el zoom de iOS */
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@utility btn {
+  @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-ctl)] px-4 text-[15px] font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50;
+}
+@utility btn-primary {
+  @apply btn bg-brand-strong text-white hover:bg-[#b80045];
+}
+@utility btn-dark {
+  @apply btn bg-ink text-white hover:bg-black;
+}
+@utility btn-secondary {
+  @apply btn border border-line-2 bg-surface text-ink hover:bg-paper;
+}
+@utility btn-ghost {
+  @apply btn text-ink-2 hover:bg-paper hover:text-ink;
+}
+@utility btn-danger {
+  @apply btn border border-line-2 bg-surface text-bad hover:bg-bad-tint;
+}
+@utility field {
+  @apply block w-full min-h-11 rounded-[var(--radius-ctl)] border border-line-2 bg-surface px-3 py-2 text-ink placeholder:text-ink-3 focus:border-ink focus:outline-none focus-visible:outline-none focus:ring-2 focus:ring-ink/10 disabled:bg-paper disabled:text-ink-2;
+}
+@utility label {
+  @apply mb-1.5 block text-sm font-medium text-ink;
+}
+@utility hint {
+  @apply mt-1.5 text-sm text-ink-2;
+}
+@utility panel {
+  @apply rounded-[var(--radius-ctl)] border border-line bg-surface;
+}
+@utility num {
+  @apply font-mono tabular-nums;
+}

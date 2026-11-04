@@ -1,0 +1,50 @@
+name: Tareas programadas
+
+# Requiere los secretos del repositorio: NIR_URL (https://nir.amoxtli.tech), CRON_SECRET,
+# FIREBASE_SERVICE_ACCOUNT_BASE64 y BACKUP_PASSPHRASE.
+on:
+  schedule:
+    - cron: "17 12 * * *"   # 06:17 CDMX — estados de suscripción y respaldo diario
+    - cron: "41 13 * * 1"   # lunes 07:41 CDMX — limpieza y respaldo con imágenes
+  workflow_dispatch:
+
+jobs:
+  estados:
+    if: github.event.schedule != '41 13 * * 1'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Actualizar estados (RN09)
+        run: |
+          curl -fsS -X POST -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" "${{ secrets.NIR_URL }}/api/cron/statuses"
+
+  limpieza:
+    if: github.event.schedule == '41 13 * * 1' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Limpieza semanal
+        run: |
+          curl -fsS -X POST -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" "${{ secrets.NIR_URL }}/api/cron/purge"
+
+  respaldo:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - name: Exportar Firestore (RNF08)
+        env:
+          FIREBASE_SERVICE_ACCOUNT_BASE64: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_BASE64 }}
+        run: |
+          FLAG=""
+          if [ "${{ github.event.schedule }}" = "41 13 * * 1" ]; then FLAG="--with-images"; fi
+          npm run backup -- backups/nir.json $FLAG
+      - name: Cifrar
+        run: |
+          gpg --batch --yes --pinentry-mode loopback --passphrase "${{ secrets.BACKUP_PASSPHRASE }}" -c backups/nir.json
+          rm backups/nir.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: respaldo-${{ github.run_id }}
+          path: backups/nir.json.gpg
+          retention-days: 30
