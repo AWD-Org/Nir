@@ -23,7 +23,11 @@ function adminApp(): App {
 export function adminDb(): Firestore {
   if (db) return db;
   db = getFirestore(adminApp());
-  db.settings({ ignoreUndefinedProperties: true });
+  try {
+    db.settings({ ignoreUndefinedProperties: true });
+  } catch {
+    // Otro bundle del servidor (ruta o Server Action) ya configuró esta instancia compartida.
+  }
   return db;
 }
 
