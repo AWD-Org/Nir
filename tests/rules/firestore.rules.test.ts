@@ -1,42 +1,87 @@
 import { readFileSync } from "node:fs";
-import { afterAll, beforeAll, beforeEach, describe, it } from "vitest";
-import { assertFails, assertSucceeds, initializeTestEnvironment, type RulesTestEnvironment } from "@firebase/rules-unit-testing";
-import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { deleteApp, initializeApp, type FirebaseApp } from "firebase/app";
+import { connectFirestoreEmulator, doc, getDoc, getFirestore, setDoc, terminate, updateDoc, type Firestore } from "firebase/firestore";
 
 // RNF11: ningún negocio lee ni escribe datos de otro. Corre con: npm run test:rules
-let env: RulesTestEnvironment;
+// Usa el SDK modular contra el emulador con tokens simulados (mockUserToken).
+const PROJECT = "demo-nir-rules";
+const HOST = "127.0.0.1";
+const PORT = 8080;
+const BASE = `http://${HOST}:${PORT}/emulator/v1/projects/${PROJECT}`;
+const apps: FirebaseApp[] = [];
+const dbs: Firestore[] = [];
+
+function client(token?: Record<string, unknown> & { sub: string }): Firestore {
+  const app = initializeApp({ projectId: PROJECT, apiKey: "demo" }, `app-${apps.length}-${Math.random()}`);
+  const db = getFirestore(app);
+  connectFirestoreEmulator(db, HOST, PORT, token ? { mockUserToken: { user_id: token.sub, ...token } } : undefined);
+  apps.push(app);
+  dbs.push(db);
+  return db;
+}
+
+// "owner" es el SDK sin reglas: el emulador acepta "Authorization: Bearer owner".
+async function adminWrite(path: string, data: Record<string, unknown>) {
+  const res = await fetch(`http://${HOST}:${PORT}/v1/projects/${PROJECT}/databases/(default)/documents/${path}`, {
+    method: "PATCH",
+    headers: { "content-type": "application/json", Authorization: "Bearer owner" },
+    body: JSON.stringify({ fields: toFields(data) }),
+  });
+  if (!res.ok) throw new Error(`seed ${path}: ${res.status} ${await res.text()}`);
+}
+
+function toValue(v: unknown): Record<string, unknown> {
+  if (v === null) return { nullValue: null };
+  if (typeof v === "string") return { stringValue: v };
+  if (typeof v === "boolean") return { booleanValue: v };
+  if (typeof v === "number") return Number.isInteger(v) ? { integerValue: String(v) } : { doubleValue: v };
+  if (Array.isArray(v)) return { arrayValue: { values: v.map(toValue) } };
+  return { mapValue: { fields: toFields(v as Record<string, unknown>) } };
+}
+const toFields = (o: Record<string, unknown>) => Object.fromEntries(Object.entries(o).map(([k, v]) => [k, toValue(v)]));
+
+async function assertSucceeds(p: Promise<unknown>) {
+  await p; // lanza permission-denied si la regla lo bloquea
+}
+async function assertFails(p: Promise<unknown>) {
+  await expect(p).rejects.toMatchObject({ code: "permission-denied" });
+}
 
 beforeAll(async () => {
-  env = await initializeTestEnvironment({
-    projectId: "demo-nir-rules",
-    firestore: { rules: readFileSync("firestore.rules", "utf8"), host: "127.0.0.1", port: 8080 },
+  const res = await fetch(`${BASE}:securityRules`, {
+    method: "PUT",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ rules: { files: [{ name: "firestore.rules", content: readFileSync("firestore.rules", "utf8") }] } }),
   });
+  if (!res.ok) throw new Error(`No se cargaron las reglas: ${await res.text()}`);
 });
-afterAll(async () => env?.cleanup());
+
+afterAll(async () => {
+  await Promise.all(dbs.map((d) => terminate(d).catch(() => {})));
+  await Promise.all(apps.map((a) => deleteApp(a).catch(() => {})));
+});
 
 beforeEach(async () => {
-  await env.clearFirestore();
-  await env.withSecurityRulesDisabled(async (ctx) => {
-    const db = ctx.firestore();
-    for (const [t, owner, status] of [["tA", "uA", "active"], ["tB", "uB", "active"], ["tS", "uS", "suspended"]]) {
-      await setDoc(doc(db, `tenants/${t}`), { name: t, ownerUid: owner, status, profile: { phone: "" }, billing: { cycle: "monthly" } });
-      await setDoc(doc(db, `tenants/${t}/menu/draft`), { categories: {}, items: {}, itemCount: 0 });
-      await setDoc(doc(db, `tenants/${t}/public/page`), { name: t });
-      await setDoc(doc(db, `users/${owner}`), { email: `${owner}@x.mx`, role: "owner", tenantId: t });
-      await setDoc(doc(db, `owners/${owner}`), { tenantId: t });
-    }
-    await setDoc(doc(db, "cards/tA_1-abcd"), { tenantId: "tA", table: 1, status: "delivered" });
-    await setDoc(doc(db, "payments/p1"), { tenantId: "tA", amountCents: 100 });
-    await setDoc(doc(db, "stats/tA_20261103"), { tenantId: "tA", visits: 3 });
-    await setDoc(doc(db, "images/img1"), { tenantId: "tA" });
-    await setDoc(doc(db, "slugs/a"), { tenantId: "tA", current: true });
-    await setDoc(doc(db, "auditLog/e1"), { tenantId: "tA" });
-  });
+  await fetch(`${BASE}/databases/(default)/documents`, { method: "DELETE" });
+  for (const [t, owner, status] of [["tA", "uA", "active"], ["tB", "uB", "active"], ["tS", "uS", "suspended"]]) {
+    await adminWrite(`tenants/${t}`, { name: t, ownerUid: owner, status, profile: { phone: "" }, billing: { cycle: "monthly" } });
+    await adminWrite(`tenants/${t}/menu/draft`, { categories: {}, items: {}, itemCount: 0 });
+    await adminWrite(`tenants/${t}/public/page`, { name: t });
+    await adminWrite(`users/${owner}`, { email: `${owner}@x.mx`, role: "owner", tenantId: t });
+    await adminWrite(`owners/${owner}`, { tenantId: t });
+  }
+  await adminWrite("cards/tA_1-abcd", { tenantId: "tA", table: 1, status: "delivered" });
+  await adminWrite("payments/p1", { tenantId: "tA", amountCents: 100 });
+  await adminWrite("stats/tA_20261103", { tenantId: "tA", visits: 3 });
+  await adminWrite("images/img1", { tenantId: "tA" });
+  await adminWrite("slugs/a", { tenantId: "tA", current: true });
+  await adminWrite("auditLog/e1", { tenantId: "tA" });
 });
 
-const owner = (uid: string, tenantId: string) => env.authenticatedContext(uid, { role: "owner", tenantId }).firestore();
-const staff = () => env.authenticatedContext("staff1", { role: "seller" }).firestore();
-const anon = () => env.unauthenticatedContext().firestore();
+const owner = (uid: string, tenantId: string) => client({ sub: uid, role: "owner", tenantId });
+const staff = () => client({ sub: "staff1", role: "seller" });
+const anon = () => client();
 
 describe("aislamiento entre negocios", () => {
   it("el dueño lee su negocio, su carta y su página", async () => {

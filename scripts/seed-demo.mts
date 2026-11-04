@@ -6,9 +6,9 @@
  * y el negocio ficticio "Bar de Prueba" activo con carta y 6 tarjetas.
  */
 import { Timestamp } from "firebase-admin/firestore";
-import { admin } from "./_admin";
-import { buildPublicPage } from "../lib/domain/publish";
-import type { MenuDraft, Tenant } from "../lib/domain/types";
+import { admin } from "./_admin.mts";
+import { buildPublicPage } from "../lib/domain/publish.ts";
+import type { MenuDraft, Tenant } from "../lib/domain/types.ts";
 
 if (!process.env.FIRESTORE_EMULATOR_HOST) {
   console.error("Este script solo corre contra el emulador (FIRESTORE_EMULATOR_HOST).");

@@ -7,7 +7,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 import { Timestamp } from "firebase-admin/firestore";
-import { admin } from "./_admin";
+import { admin } from "./_admin.mts";
 
 const out = process.argv[2] ?? `backups/nir-${new Date().toISOString().slice(0, 10)}.json`;
 const withImages = process.argv.includes("--with-images");

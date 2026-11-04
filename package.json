@@ -9,11 +9,11 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "test": "vitest run tests/unit",
-    "test:rules": "firebase emulators:exec --only firestore --project demo-nir \"vitest run tests/rules\"",
+    "test:rules": "firebase emulators:exec --only firestore --project demo-nir-rules \"vitest run tests/rules\"",
     "emulators": "firebase emulators:start --project demo-nir",
-    "seed": "tsx scripts/seed-demo.ts",
-    "set-role": "tsx scripts/set-role.ts",
-    "backup": "tsx scripts/backup.ts"
+    "seed": "tsx scripts/seed-demo.mts",
+    "set-role": "tsx scripts/set-role.mts",
+    "backup": "tsx scripts/backup.mts"
   },
   "engines": {
     "node": ">=20"
@@ -45,7 +45,6 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
-    "@firebase/rules-unit-testing": "^5.0.2",
     "@playwright/test": "^1.64.1",
     "@tailwindcss/postcss": "^4.3.4",
     "@types/node": "^26.6.6",

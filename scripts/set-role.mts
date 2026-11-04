@@ -4,7 +4,7 @@
  *   npm run set-role -- vendedor@amoxtli.tech seller
  * El usuario debe cerrar sesión y volver a entrar para que el rol aplique.
  */
-import { admin } from "./_admin";
+import { admin } from "./_admin.mts";
 
 const [email, role] = process.argv.slice(2);
 if (!email || !["seller", "superadmin", "owner"].includes(role)) {
