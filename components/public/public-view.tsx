@@ -435,26 +435,24 @@ const tap = (onOpen: () => void) => ({
   },
 });
 
-/** Nombre del producto; si es recomendado de la casa, una etiqueta corta y discreta arriba del nombre. */
+/** Nombre del producto (el "recomendado" va como insignia junto a las etiquetas, no en el nombre). */
 function Name({ item }: { item: PublicItem }) {
-  if (!item.featured) return <>{item.name}</>;
+  return <>{item.name}</>;
+}
+
+/** Insignia "Recomendado": mismo tamaño y forma que las etiquetas, en el color de precios. */
+function RecoBadge() {
   return (
-    <>
-      <span
-        className="mb-0.5 flex items-center text-[12px] font-semibold normal-case tracking-normal"
-        style={{ color: "var(--accent)", fontFamily: "var(--body)", fontWeight: 600, fontSize: 12, lineHeight: 1.4 }}
-      >
-        <FavStar />
-        Recomendado
-      </span>
-      {item.name}
-    </>
+    <span className="inline-flex items-center border px-2 py-0.5 text-[13px] font-semibold" style={{ borderRadius: "var(--radius)", borderColor: "var(--accent)", color: "var(--accent)" }}>
+      <FavStar />
+      Recomendado
+    </span>
   );
 }
 
-function FavStar() {
+function FavStar({ className = "-mt-0.5 mr-1 inline-block h-[0.85em] w-[0.85em] align-middle" }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" className="-mt-0.5 mr-1 inline-block h-[0.85em] w-[0.85em] align-middle" fill="currentColor" style={{ color: "var(--accent)" }} aria-hidden="true">
+    <svg viewBox="0 0 24 24" className={className} fill="currentColor" style={{ color: "var(--accent)" }} aria-hidden="true">
       <path d="m12 2.8 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.1 6.4 20l1.1-6.2L3 9.4l6.2-.9z" />
     </svg>
   );
@@ -598,9 +596,10 @@ function CategoryBlock({ cat, style, displayClass, img, onOpen }: { cat: PublicC
 
 function Badges({ item }: { item: PublicItem }) {
   const off = !item.available;
-  if (!item.tags.length && !off) return null;
+  if (!item.tags.length && !off && !item.featured) return null;
   return (
     <div className="mt-2 flex flex-wrap gap-1.5">
+      {item.featured && <RecoBadge />}
       {off && (
         <span className="border px-2 py-0.5 text-[13px] font-semibold" style={{ borderRadius: "var(--radius)", borderColor: "var(--text)" }}>
           Agotado
@@ -652,7 +651,18 @@ function ClassicItem({ item, index, onOpen }: { item: PublicItem; index: number;
           ))}
         </ul>
       )}
-      {item.tags.length > 0 && <p className="mt-1 text-[13px] text-[var(--muted)]">{item.tags.map((t) => TAG_LABEL[t] ?? t).join(" · ")}</p>}
+      {(item.tags.length > 0 || item.featured) && (
+        <p className="mt-1 flex flex-wrap items-center gap-x-2 text-[13px] text-[var(--muted)]">
+          {item.featured && (
+            <span className="inline-flex items-center font-semibold" style={{ color: "var(--accent)" }}>
+              <FavStar />
+              Recomendado
+            </span>
+          )}
+          {item.featured && item.tags.length > 0 && <span aria-hidden>·</span>}
+          {item.tags.length > 0 && <span>{item.tags.map((t) => TAG_LABEL[t] ?? t).join(" · ")}</span>}
+        </p>
+      )}
     </li>
   );
 }
@@ -687,6 +697,16 @@ function PhotoOrInitial({ item, img, size, className }: { item: PublicItem; img:
           Agotado
         </span>
       )}
+      {item.featured && (
+        <span
+          className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full"
+          style={{ background: "var(--bg)" }}
+          role="img"
+          aria-label="Recomendado de la casa"
+        >
+          <FavStar className="h-4 w-4" />
+        </span>
+      )}
     </div>
   );
 }
@@ -698,19 +718,24 @@ function GridItem({ item, index, img, displayClass, textOnly, onOpen }: { item: 
     return (
       <li
         {...tap(onOpen)}
-        className="anim-rise flex min-h-[132px] min-w-0 cursor-pointer flex-col p-3"
+        className="anim-rise relative flex min-h-[132px] min-w-0 cursor-pointer flex-col p-3"
         style={{ background: "var(--surface)", borderRadius: PHOTO_RADIUS, opacity: off ? 0.65 : 1, "--i": Math.min(index, 8) } as CSSProperties}
       >
         <h3 className={`line-clamp-3 text-[17px] leading-snug ${displayClass}`} style={displayStyle(displayClass)}>
           <Name item={item} />
         </h3>
         {item.description && <p className="mt-1 line-clamp-2 text-[13px] leading-snug text-[var(--muted)]">{item.description}</p>}
-        <p className="mt-auto pt-2 text-[15px] font-semibold tabular-nums" style={priceColor(off)}>
+        <p className="mt-auto flex items-center justify-between gap-2 pt-2 text-[15px] font-semibold tabular-nums" style={priceColor(off)}>
           {off ? <span className="text-[13px] uppercase tracking-wide">Agotado</span> : (
-            <>
+            <span>
               {item.variants.length > 0 && <span className="font-normal text-[var(--muted)]">desde </span>}
               {formatPrice(fromPrice(item))}
-            </>
+            </span>
+          )}
+          {item.featured && (
+            <span role="img" aria-label="Recomendado de la casa">
+              <FavStar className="h-4 w-4" />
+            </span>
           )}
         </p>
       </li>
@@ -759,8 +784,9 @@ function ItemRow({ item, img, index, onOpen }: { item: PublicItem; img: Img; ind
             ))}
           </ul>
         )}
-        {(item.tags.length > 0 || off) && (
+        {(item.tags.length > 0 || off || item.featured) && (
           <div className="mt-2 flex flex-wrap gap-1.5">
+            {item.featured && <RecoBadge />}
             {off && (
               <span className="border px-2 py-0.5 text-[13px] font-semibold" style={{ borderRadius: "var(--radius)", borderColor: "var(--text)" }}>
                 Agotado
