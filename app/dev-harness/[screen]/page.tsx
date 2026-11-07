@@ -56,16 +56,18 @@ export default async function Harness({ params }: { params: Promise<{ screen: st
     return <PublicView page={{ ...base, menu: { categories } }} mode="live" />;
   }
   if (screen.startsWith("estilos-")) {
-    const tpl = screen.replace("estilos-", "") as TemplateId;
+    // estilos-noche: algunas fotos (como una carta real); estilos-noche-sinfotos: ninguna.
+    const [tpl, variant] = screen.replace("estilos-", "").split("-") as [TemplateId, string | undefined];
+    const noPhotos = variant === "sinfotos";
     const base = demoPage(tpl);
-    const photos: Record<string, string> = { i1: "guac", i2: "queso", i3: "tinga", i4: "mezcal", i6: "jamaica" };
+    const photos: Record<string, string> = { i1: "guac", i3: "tinga", i6: "jamaica" };
     const categories = [
-      ...base.menu.categories.map((c) => ({ ...c, items: c.items.map((i) => ({ ...i, imageId: photos[i.id] ?? null })) })),
+      ...base.menu.categories.map((c) => ({ ...c, items: c.items.map((i) => ({ ...i, imageId: noPhotos ? null : (photos[i.id] ?? null), featured: i.id === "i1" || i.id === "i4" })) })),
       {
         id: "postres",
         name: "Postres",
         items: [
-          { id: "p1", name: "Pan de elote", description: "Con cajeta y nuez.", priceCents: 7500, variants: [], tags: ["vegetariano"], imageId: "pan", available: true },
+          { id: "p1", name: "Pan de elote", description: "Con cajeta y nuez.", priceCents: 7500, variants: [], tags: ["vegetariano"], imageId: noPhotos ? null : "pan", available: true },
           { id: "p2", name: "Flan napolitano", description: "", priceCents: 6500, variants: [], tags: [], imageId: null, available: true },
         ],
       },

@@ -58,6 +58,7 @@ export const itemSchema = z.object({
   tags: z.array(z.enum(tagIds)).max(TAGS.length),
   imageId: z.string().nullable(),
   available: z.boolean(),
+  featured: z.boolean().optional(),
 });
 
 export const categorySchema = z.object({

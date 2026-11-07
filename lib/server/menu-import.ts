@@ -49,10 +49,14 @@ export async function applyMenuImport(tenantId: string, csv: string, mode: "appe
           tags: it.tags,
           imageId: null,
           available: it.available,
+          featured: it.featured,
           order: orderIn(cid),
         };
       }
       if (Object.keys(categories).length > LIMITS.categories) throw new ActionError(`Con este archivo la carta tendría más de ${LIMITS.categories} categorías.`);
+      if (Object.values(items).filter((i) => i.featured).length > LIMITS.featured) {
+        throw new ActionError(`Con este archivo la carta tendría más de ${LIMITS.featured} favoritos de la casa.`);
+      }
       if (Object.keys(items).length > LIMITS.items) throw new ActionError(`Con este archivo la carta tendría más de ${LIMITS.items} productos.`);
 
       tx.set(ref, { categories, items, itemCount: Object.keys(items).length, updatedAt: nowTs(), updatedBy: uid });

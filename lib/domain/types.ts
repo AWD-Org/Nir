@@ -116,6 +116,8 @@ export interface MenuItem {
   tags: string[];
   imageId: string | null;
   available: boolean;
+  /** Favorito de la casa (opcional en cartas anteriores). */
+  featured?: boolean;
   order: number;
 }
 
@@ -136,6 +138,7 @@ export interface PublicItem {
   tags: string[];
   imageId: string | null;
   available: boolean;
+  featured?: boolean;
 }
 
 export interface PublicCategory {

@@ -8,7 +8,7 @@ import { parsePrice } from "./money";
  * - etiquetas: "picante|vegetariano|vegano|sin-gluten|nuevo"
  * - disponible: "si" o "no" (vacío = si)
  */
-export const IMPORT_COLUMNS = ["categoria", "producto", "descripcion", "precio", "variantes", "etiquetas", "disponible"] as const;
+export const IMPORT_COLUMNS = ["categoria", "producto", "descripcion", "precio", "variantes", "etiquetas", "disponible", "favorito"] as const;
 
 export interface ImportItem {
   category: string;
@@ -18,6 +18,7 @@ export interface ImportItem {
   variants: { name: string; priceCents: number }[];
   tags: string[];
   available: boolean;
+  featured: boolean;
 }
 
 export interface ImportRowError {
@@ -92,6 +93,9 @@ const HEADER_ALIASES: Record<string, (typeof IMPORT_COLUMNS)[number]> = {
   tags: "etiquetas",
   disponible: "disponible",
   available: "disponible",
+  favorito: "favorito",
+  destacado: "favorito",
+  recomendado: "favorito",
 };
 
 const TAG_IDS = new Map(TAGS.flatMap((t) => [[norm(t.id), t.id], [norm(t.label), t.id]]));
@@ -154,7 +158,9 @@ export function parseMenuCsv(text: string): ImportResult {
     const disp = norm(get(r, "disponible"));
     const available = !["no", "0", "false", "agotado"].includes(disp);
 
-    items.push({ category, name, description: get(r, "descripcion").slice(0, 280), priceCents, variants, tags, available });
+    const featured = ["si", "1", "true", "x"].includes(norm(get(r, "favorito")));
+
+    items.push({ category, name, description: get(r, "descripcion").slice(0, 280), priceCents, variants, tags, available, featured });
   });
 
   const categories: string[] = [];
@@ -169,9 +175,9 @@ export const sameCategory = (a: string, b: string) => norm(a) === norm(b);
 /** Plantilla descargable con ejemplos de cada caso. */
 export const IMPORT_TEMPLATE = [
   IMPORT_COLUMNS.join(","),
-  'Botanas,Guacamole con totopos,"Aguacate, chile serrano y cilantro",95,,vegetariano,si',
-  "Botanas,Chicharrón de queso,,85,,,si",
-  "Mezcales,Espadín,Joven de Oaxaca,,Copa:90|Botella:1200,,si",
-  "Bebidas sin alcohol,Agua de jamaica,,,Vaso:45|Jarra:120,,si",
-  "Postres,Pastel de elote,Con cajeta,70,,nuevo,no",
+  'Botanas,Guacamole con totopos,"Aguacate, chile serrano y cilantro",95,,vegetariano,si,si',
+  "Botanas,Chicharrón de queso,,85,,,si,",
+  "Mezcales,Espadín,Joven de Oaxaca,,Copa:90|Botella:1200,,si,si",
+  "Bebidas sin alcohol,Agua de jamaica,,,Vaso:45|Jarra:120,,si,",
+  "Postres,Pastel de elote,Con cajeta,70,,nuevo,no,",
 ].join("\n");

@@ -43,4 +43,10 @@ describe("importar carta", () => {
   it("une categorías iguales aunque cambien acentos o mayúsculas", () => {
     expect(parseMenuCsv("categoria,producto,precio\nBebidas,A,1\nbebidas,B,2\nBEBÍDAS,C,3").categories).toEqual(["Bebidas"]);
   });
+
+  it("lee la columna favorito (opcional)", () => {
+    const r = parseMenuCsv("categoria,producto,precio,favorito\nTacos,Pastor,22,si\nTacos,Suadero,22,\nTacos,Bistec,24,no");
+    expect(r.items.map((i) => i.featured)).toEqual([true, false, false]);
+    expect(parseMenuCsv(IMPORT_TEMPLATE).items.filter((i) => i.featured).map((i) => i.name)).toEqual(["Guacamole con totopos", "Espadín"]);
+  });
 });

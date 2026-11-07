@@ -2,6 +2,8 @@ import type { ButtonConfig, ButtonKey, SocialKey, TenantStatus } from "./types";
 
 export const LIMITS = {
   items: 300,
+  /** Favoritos de la casa: se muestran arriba de la carta. */
+  featured: 8,
   categories: 30,
   tables: 100,
   variants: 6,

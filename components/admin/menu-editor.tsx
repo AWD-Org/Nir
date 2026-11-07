@@ -12,7 +12,7 @@ import {
 } from "@dnd-kit/core";
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Check, Copy, Eye, EyeOff, FileUp, GripVertical, Loader2, Pencil, Plus, Smartphone, Trash2, X } from "lucide-react";
+import { Check, Copy, Eye, EyeOff, FileUp, GripVertical, Loader2, Pencil, Plus, Smartphone, Star, Trash2, X } from "lucide-react";
 import { useMemo, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { PublicView } from "@/components/public/public-view";
@@ -34,6 +34,7 @@ import {
   saveCategory,
   saveItem,
   setAvailable,
+  setFeatured,
   setPrice,
 } from "@/app/admin/actions";
 import { ImagePicker } from "./image-picker";
@@ -157,6 +158,15 @@ export function MenuEditor({ tenant, initial, readOnly }: { tenant: Tenant; init
                       patchItem(id, { available: v });
                       const r = await act(setAvailable(id, v), v ? "Disponible" : "Marcado como agotado");
                       if (!r.ok) patchItem(id, { available: !v });
+                    }}
+                    onFeatured={async (id, v) => {
+                      if (v && Object.values(draft.items).filter((i) => i.featured).length >= LIMITS.featured) {
+                        toast.error(`Puedes tener hasta ${LIMITS.featured} favoritos de la casa. Quita uno para agregar otro.`);
+                        return;
+                      }
+                      patchItem(id, { featured: v });
+                      const r = await act(setFeatured(id, v), v ? "Agregado a favoritos de la casa" : "Quitado de favoritos");
+                      if (!r.ok) patchItem(id, { featured: !v });
                     }}
                     onPrice={async (id, cents) => {
                       const prev = draft.items[id].priceCents;
@@ -320,6 +330,7 @@ function CategoryBlock({
   onAddItem,
   onEditItem,
   onAvailable,
+  onFeatured,
   onPrice,
 }: {
   index: number;
@@ -333,6 +344,7 @@ function CategoryBlock({
   onAddItem: () => void;
   onEditItem: (id: string) => void;
   onAvailable: (id: string, v: boolean) => void;
+  onFeatured: (id: string, v: boolean) => void;
   onPrice: (id: string, cents: number) => Promise<boolean>;
 }) {
   const s = useSortable({ id: `cat:${id}`, disabled: readOnly });
@@ -372,7 +384,7 @@ function CategoryBlock({
       <SortableContext items={items.map(([iid]) => `item:${iid}`)} strategy={verticalListSortingStrategy}>
         <ul className="divide-y divide-line">
           {items.map(([iid, item], n) => (
-            <ItemRow key={iid} index={n} id={iid} item={item} readOnly={readOnly} onEdit={() => onEditItem(iid)} onAvailable={(v) => onAvailable(iid, v)} onPrice={(c) => onPrice(iid, c)} />
+            <ItemRow key={iid} index={n} id={iid} item={item} readOnly={readOnly} onEdit={() => onEditItem(iid)} onAvailable={(v) => onAvailable(iid, v)} onFeatured={(v) => onFeatured(iid, v)} onPrice={(c) => onPrice(iid, c)} />
           ))}
         </ul>
       </SortableContext>
@@ -393,6 +405,7 @@ function ItemRow({
   readOnly,
   onEdit,
   onAvailable,
+  onFeatured,
   onPrice,
 }: {
   index: number;
@@ -401,6 +414,7 @@ function ItemRow({
   readOnly: boolean;
   onEdit: () => void;
   onAvailable: (v: boolean) => void;
+  onFeatured: (v: boolean) => void;
   onPrice: (cents: number) => Promise<boolean>;
 }) {
   const s = useSortable({ id: `item:${id}`, disabled: readOnly });
@@ -433,6 +447,17 @@ function ItemRow({
       ) : (
         <span className="num hidden w-24 text-right text-sm text-ink-2 sm:block">{item.variants.length} precios</span>
       )}
+      <button
+        type="button"
+        onClick={() => onFeatured(!item.featured)}
+        disabled={readOnly}
+        aria-pressed={!!item.featured}
+        aria-label={item.featured ? `Quitar ${item.name} de favoritos de la casa` : `Marcar ${item.name} como favorito de la casa`}
+        title={item.featured ? "Favorito de la casa" : "Marcar como favorito de la casa"}
+        className={`flex h-10 w-9 shrink-0 items-center justify-center rounded-md transition-colors disabled:opacity-50 ${item.featured ? "text-[#D99A06]" : "text-ink-3 hover:text-ink"}`}
+      >
+        <Star className={`h-[18px] w-[18px] ${item.featured ? "anim-pop fill-current" : ""}`} />
+      </button>
       <Switch checked={item.available} onCheckedChange={onAvailable} disabled={readOnly} label={`${item.name} disponible`} />
     </li>
   );
@@ -517,6 +542,7 @@ function ItemSheet({
     tags: existing?.tags ?? [],
     imageId: existing?.imageId ?? null,
     available: existing?.available ?? true,
+    featured: existing?.featured ?? false,
   });
   const [error, setError] = useState<string | null>(null);
   const [confirm, setConfirm] = useState(false);
@@ -540,6 +566,7 @@ function ItemSheet({
         tags: form.tags,
         imageId: form.imageId,
         available: form.available,
+        featured: form.featured,
       },
     };
   }
@@ -691,6 +718,14 @@ function ItemSheet({
                 <p className="text-sm text-ink-2">Apágalo cuando se acabe; se ve como agotado.</p>
               </div>
               <Switch checked={form.available} onCheckedChange={(v) => set("available", v)} label="Disponible" />
+            </div>
+
+            <div className="flex items-center justify-between rounded-lg border border-line p-3">
+              <div>
+                <p className="font-medium">Favorito de la casa</p>
+                <p className="text-sm text-ink-2">Aparece arriba de la carta, antes de las categorías. Hasta {LIMITS.featured}.</p>
+              </div>
+              <Switch checked={form.featured} onCheckedChange={(v) => set("featured", v)} label="Favorito de la casa" />
             </div>
 
             {error && <p role="alert" className="rounded-md border border-bad/20 bg-bad-tint px-3 py-2 text-[15px] text-bad">{error}</p>}

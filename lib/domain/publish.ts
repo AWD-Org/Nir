@@ -26,6 +26,7 @@ export function buildPublicPage(t: Tenant, draft: MenuDraft, now = new Date()): 
           tags: i.tags,
           imageId: i.imageId,
           available: i.available,
+          featured: !!i.featured,
         })),
     }))
     .filter((c) => c.items.length > 0);

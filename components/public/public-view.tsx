@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
+import { createPortal } from "react-dom";
 import { BUTTON_LABELS, SOCIAL_LABELS, TAGS } from "@/lib/domain/constants";
 import { formatPrice } from "@/lib/domain/money";
 import { socialHref } from "@/lib/domain/publish";
@@ -12,6 +13,9 @@ export type View = "home" | "menu" | "social" | "wifi";
 const HASH: Record<View, string> = { home: "", menu: "#carta", social: "#redes", wifi: "#wifi" };
 const fromHash = (h: string): View => (h === "#carta" ? "menu" : h === "#redes" ? "social" : h === "#wifi" ? "wifi" : "home");
 const TAG_LABEL = Object.fromEntries(TAGS.map((t) => [t.id, t.label]));
+
+/** Colores de la plantilla para lo que se dibuja fuera de la raíz (la ficha del producto). */
+const ThemeVars = createContext<CSSProperties>({});
 
 export const imgSrc = (id: string, size: "thumb" | "full") => `/img/${id}/${size}`;
 
@@ -98,6 +102,7 @@ export function PublicView({ page, mode = "live", resolveImage, forceView, highl
   const displayClass = theme.template.uppercaseDisplay ? "uppercase tracking-[0.01em]" : "";
 
   return (
+    <ThemeVars.Provider value={style}>
     <div ref={rootRef} style={style} className="anim-fade min-h-full w-full overflow-x-clip" data-template={theme.template.id}>
       {mode === "live" && (
         // El navegador del celular pinta su barra superior, la inferior y el rebote del scroll con el fondo del documento.
@@ -112,6 +117,7 @@ export function PublicView({ page, mode = "live", resolveImage, forceView, highl
         {view === "wifi" && <WifiSection page={page} displayClass={displayClass} back={() => go("home")} />}
       </div>
     </div>
+    </ThemeVars.Provider>
   );
 }
 
@@ -306,6 +312,11 @@ function MenuSection({
 }) {
   const cats = page.menu.categories;
   const [active, setActive] = useState(cats[0]?.id);
+  const [detail, setDetail] = useState<PublicItem | null>(null);
+  const closeDetail = useCallback(() => setDetail(null), []);
+  const mainRef = useRef<HTMLElement>(null);
+  const featured = useMemo(() => cats.flatMap((c) => c.items.filter((i) => i.featured)), [cats]);
+  const style = page.theme.menuStyle ?? "lista";
   const chipsRef = useRef<HTMLDivElement>(null);
   const barRef = useRef<HTMLDivElement>(null);
   // Mientras se desplaza por un toque en una categoría, el observador no cambia la activa.
@@ -393,12 +404,14 @@ function MenuSection({
         <div className="h-px w-full" style={{ background: "var(--line)" }} />
       </div>
 
-      <main className="flex-1 px-4 pb-16">
+      <main ref={mainRef} className="flex-1 px-4 pb-16">
+        {featured.length > 0 && <Favorites items={featured} img={img} displayClass={displayClass} onOpen={setDetail} />}
         {cats.length === 0 && <p className="px-2 py-10 text-[16px] text-[var(--muted)]">La carta se está preparando.</p>}
         {cats.map((c) => (
-          <CategoryBlock key={c.id} cat={c} style={page.theme.menuStyle ?? "lista"} displayClass={displayClass} img={img} />
+          <CategoryBlock key={c.id} cat={c} style={style} displayClass={displayClass} img={img} onOpen={setDetail} />
         ))}
       </main>
+      {detail && <ItemDetail item={detail} img={img} displayClass={displayClass} anchor={mainRef} onClose={closeDetail} />}
     </>
   );
 }
@@ -411,7 +424,174 @@ const PHOTO_RADIUS = "min(var(--radius), 18px)";
 const priceColor = (off: boolean) => ({ color: off ? "var(--muted)" : "var(--accent)" });
 const fromPrice = (i: PublicItem) => (i.variants.length ? Math.min(...i.variants.map((v) => v.priceCents)) : i.priceCents);
 
-function CategoryBlock({ cat, style, displayClass, img }: { cat: PublicCategory; style: MenuStyle; displayClass: string; img: Img }) {
+/** Un producto se abre en su ficha con un toque (o Enter/espacio con teclado). */
+const tap = (onOpen: () => void) => ({
+  role: "button" as const,
+  tabIndex: 0,
+  onClick: onOpen,
+  onKeyDown: (e: KeyboardEvent) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      onOpen();
+    }
+  },
+});
+
+/** Nombre del producto; si es favorito, la estrella va pegada a la primera palabra (nunca sola en un renglón). */
+function Name({ item }: { item: PublicItem }) {
+  if (!item.featured) return <>{item.name}</>;
+  const [first, ...rest] = item.name.split(" ");
+  return (
+    <>
+      <span className="whitespace-nowrap">
+        <FavStar />
+        {first}
+      </span>
+      {rest.length > 0 && ` ${rest.join(" ")}`}
+    </>
+  );
+}
+
+function FavStar() {
+  return (
+    <svg viewBox="0 0 24 24" className="-mt-0.5 mr-1 inline-block h-[0.85em] w-[0.85em] align-middle" fill="currentColor" style={{ color: "var(--accent)" }} aria-label="Favorito de la casa" role="img">
+      <path d="m12 2.8 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.1 6.4 20l1.1-6.2L3 9.4l6.2-.9z" />
+    </svg>
+  );
+}
+
+/** Favoritos de la casa: carrusel arriba de la carta. */
+function Favorites({ items, img, displayClass, onOpen }: { items: PublicItem[]; img: Img; displayClass: string; onOpen: (i: PublicItem) => void }) {
+  const withPhotos = items.some((i) => i.imageId);
+  return (
+    <section className="pt-6" aria-label="Favoritos de la casa">
+      <h2 className={`flex items-center gap-2 px-2 text-[20px] ${displayClass}`} style={displayStyle(displayClass)}>
+        <FavStar />
+        Favoritos de la casa
+      </h2>
+      <ul className="-mx-4 mt-3 flex snap-x gap-3 overflow-x-auto px-4 pb-1 [scrollbar-width:none]">
+        {items.map((i, n) => {
+          const off = !i.available;
+          return (
+            <li
+              key={i.id}
+              {...tap(() => onOpen(i))}
+              className="anim-rise w-[148px] shrink-0 cursor-pointer snap-start"
+              style={{ opacity: off ? 0.65 : 1, "--i": Math.min(n, 8) } as CSSProperties}
+            >
+              {withPhotos ? (
+                <PhotoOrInitial item={i} img={img} size="thumb" className="aspect-square w-full" />
+              ) : (
+                <div className="flex aspect-[4/3] w-full items-end p-3" style={{ background: "var(--surface)", borderRadius: PHOTO_RADIUS }}>
+                  <span className={`line-clamp-3 text-[18px] leading-tight ${displayClass}`} style={displayStyle(displayClass)}>
+                    {i.name}
+                  </span>
+                </div>
+              )}
+              {withPhotos && <h3 className="mt-2 line-clamp-2 text-[15px] font-semibold leading-snug">{i.name}</h3>}
+              <p className="mt-0.5 text-[15px] font-semibold tabular-nums" style={priceColor(off)}>
+                {i.variants.length > 0 && <span className="font-normal text-[var(--muted)]">desde </span>}
+                {formatPrice(fromPrice(i))}
+              </p>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+}
+
+/** Ficha del producto: foto grande, descripción, variantes y etiquetas. Dentro del teléfono de la vista previa
+ *  se dibuja en el teléfono; en la página real, sobre toda la pantalla. */
+function ItemDetail({ item, img, displayClass, anchor, onClose }: { item: PublicItem; img: Img; displayClass: string; anchor: React.RefObject<HTMLElement | null>; onClose: () => void }) {
+  const { backgroundColor: _bg, ...vars } = useContext(ThemeVars);
+  void _bg;
+  const [host, setHost] = useState<{ el: HTMLElement; inPhone: boolean } | null>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    const phone = anchor.current?.closest<HTMLElement>(".phone-screen") ?? null;
+    setHost({ el: phone?.parentElement ?? document.body, inPhone: !!phone });
+    const scroller = phone ?? document.documentElement;
+    const prev = scroller.style.overflow;
+    scroller.style.overflow = "hidden";
+    const onKey = (e: globalThis.KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", onKey);
+    return () => {
+      scroller.style.overflow = prev;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [anchor, onClose]);
+  useEffect(() => closeRef.current?.focus({ preventScroll: true }), [host]);
+
+  if (!host) return null;
+  const off = !item.available;
+  return createPortal(
+    <div className={`${host.inPhone ? "absolute" : "fixed"} inset-0 z-[80] flex flex-col justify-end`} style={vars} role="dialog" aria-modal="true" aria-label={item.name}>
+      <div className="anim-fade absolute inset-0 bg-black/55" onClick={onClose} aria-hidden />
+      <div
+        className="relative mx-auto max-h-[90%] w-full max-w-[480px] overflow-y-auto overscroll-contain"
+        style={{ background: "var(--bg)", color: "var(--text)", borderRadius: "min(var(--radius), 22px) min(var(--radius), 22px) 0 0", animation: "sheet-up 0.34s cubic-bezier(0.22, 1, 0.36, 1)" }}
+      >
+        <div className="sticky top-0 z-10 flex h-12 items-center justify-center">
+          <span className="h-1 w-10 rounded-full" style={{ background: "var(--line)" }} aria-hidden />
+          <button
+            ref={closeRef}
+            type="button"
+            onClick={onClose}
+            className="absolute right-2 top-1.5 flex h-10 w-10 items-center justify-center rounded-full"
+            style={{ background: "var(--bg)", color: "var(--text)" }}
+            aria-label="Cerrar"
+          >
+            <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+              <path d="M6 6l12 12M18 6 6 18" />
+            </svg>
+          </button>
+        </div>
+        {item.imageId && (
+          <div className="px-4">
+            <img src={img(item.imageId, "full")} alt={item.name} className="aspect-[4/3] w-full object-cover" style={{ borderRadius: PHOTO_RADIUS, filter: off ? "grayscale(1)" : undefined }} />
+          </div>
+        )}
+        <div className="px-5 pb-10 pt-4">
+          {item.featured && (
+            <p className="mb-1 flex items-center text-[13px] font-semibold" style={{ color: "var(--accent)" }}>
+              <FavStar />
+              Favorito de la casa
+            </p>
+          )}
+          <div className="flex items-baseline justify-between gap-4">
+            <h2 className={`text-[28px] leading-[1.1] ${displayClass}`} style={displayStyle(displayClass)}>
+              {item.name}
+            </h2>
+            {item.variants.length === 0 && (
+              <span className="shrink-0 text-[20px] font-semibold tabular-nums" style={priceColor(off)}>
+                {formatPrice(item.priceCents)}
+              </span>
+            )}
+          </div>
+          {item.description && <p className="mt-2 text-[16px] leading-relaxed text-[var(--muted)]">{item.description}</p>}
+          {item.variants.length > 0 && (
+            <ul className="mt-4 border-t" style={{ borderColor: "var(--line)" }}>
+              {item.variants.map((v) => (
+                <li key={v.name} className="flex items-baseline justify-between gap-4 border-b py-3 text-[16px]" style={{ borderColor: "var(--line)" }}>
+                  <span>{v.name}</span>
+                  <span className="font-semibold tabular-nums" style={priceColor(off)}>
+                    {formatPrice(v.priceCents)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+          <Badges item={item} />
+        </div>
+      </div>
+    </div>,
+    host.el,
+  );
+}
+
+function CategoryBlock({ cat, style, displayClass, img, onOpen }: { cat: PublicCategory; style: MenuStyle; displayClass: string; img: Img; onOpen: (i: PublicItem) => void }) {
   if (style === "clasica") {
     return (
       <section id={`cat-${cat.id}`} className="pt-9">
@@ -422,7 +602,7 @@ function CategoryBlock({ cat, style, displayClass, img }: { cat: PublicCategory;
         </h2>
         <ul className="mt-5 space-y-5 px-2">
           {cat.items.map((i, n) => (
-            <ClassicItem key={i.id} item={i} index={n} />
+            <ClassicItem key={i.id} item={i} index={n} onOpen={() => onOpen(i)} />
           ))}
         </ul>
       </section>
@@ -436,7 +616,7 @@ function CategoryBlock({ cat, style, displayClass, img }: { cat: PublicCategory;
         </h2>
         <ul className="mt-3 grid grid-cols-2 gap-x-3 gap-y-5">
           {cat.items.map((i, n) => (
-            <GridItem key={i.id} item={i} index={n} img={img} displayClass={displayClass} />
+            <GridItem key={i.id} item={i} index={n} img={img} displayClass={displayClass} textOnly={!cat.items.some((x) => x.imageId)} onOpen={() => onOpen(i)} />
           ))}
         </ul>
       </section>
@@ -445,12 +625,12 @@ function CategoryBlock({ cat, style, displayClass, img }: { cat: PublicCategory;
   if (style === "destacada") {
     return (
       <section id={`cat-${cat.id}`} className="pt-8">
-        <h2 className={`px-2 text-[26px] leading-tight ${displayClass}`} style={displayStyle(displayClass)}>
+        <h2 className={`border-b px-2 pb-3 text-[30px] leading-tight ${displayClass}`} style={{ ...displayStyle(displayClass), borderColor: "var(--text)" }}>
           {cat.name}
         </h2>
-        <ul className="mt-3">
+        <ul>
           {cat.items.map((i, n) =>
-            i.imageId ? <FeatureItem key={i.id} item={i} index={n} img={img} displayClass={displayClass} /> : <ItemRow key={i.id} item={i} img={img} index={n} />,
+            i.imageId ? <FeatureItem key={i.id} item={i} index={n} img={img} displayClass={displayClass} onOpen={() => onOpen(i)} /> : <EditorialItem key={i.id} item={i} index={n} displayClass={displayClass} onOpen={() => onOpen(i)} />,
           )}
         </ul>
       </section>
@@ -463,7 +643,7 @@ function CategoryBlock({ cat, style, displayClass, img }: { cat: PublicCategory;
       </h2>
       <ul className="mt-2">
         {cat.items.map((i, n) => (
-          <ItemRow key={i.id} item={i} img={img} index={n} />
+          <ItemRow key={i.id} item={i} img={img} index={n} onOpen={() => onOpen(i)} />
         ))}
       </ul>
     </section>
@@ -490,14 +670,16 @@ function Badges({ item }: { item: PublicItem }) {
 }
 
 /** Carta impresa: nombre, línea punteada y precio; las variantes van en su propio renglón. */
-function ClassicItem({ item, index }: { item: PublicItem; index: number }) {
+function ClassicItem({ item, index, onOpen }: { item: PublicItem; index: number; onOpen: () => void }) {
   const off = !item.available;
   const leader = <span className="mb-[0.45em] min-w-6 flex-1 border-b-2 border-dotted" style={{ borderColor: "var(--line)" }} aria-hidden />;
   return (
-    <li className="anim-rise" style={{ opacity: off ? 0.6 : 1, "--i": Math.min(index, 8) } as CSSProperties}>
+    <li {...tap(onOpen)} className="anim-rise cursor-pointer" style={{ opacity: off ? 0.6 : 1, "--i": Math.min(index, 8) } as CSSProperties}>
       {/* items-end: si el nombre ocupa dos renglones, los puntos y el precio van con el último */}
       <div className="flex items-end gap-2">
-        <h3 className={`text-[17px] font-semibold leading-snug ${off ? "line-through decoration-1" : ""}`}>{item.name}</h3>
+        <h3 className={`text-[17px] font-semibold leading-snug ${off ? "line-through decoration-1" : ""}`}>
+          <Name item={item} />
+        </h3>
         {item.variants.length === 0 ? (
           <>
             {leader}
@@ -529,8 +711,8 @@ function ClassicItem({ item, index }: { item: PublicItem; index: number }) {
   );
 }
 
-/** Mosaico sin foto: la inicial del platillo, para que la cuadrícula no tenga huecos. */
-function PhotoOrInitial({ item, img, size, className, displayClass }: { item: PublicItem; img: Img; size: "thumb" | "full"; className: string; displayClass: string }) {
+/** Foto del producto; si no tiene, un mosaico neutro con cubiertos para que la composición no tenga huecos. */
+function PhotoOrInitial({ item, img, size, className }: { item: PublicItem; img: Img; size: "thumb" | "full"; className: string; displayClass?: string }) {
   const off = !item.available;
   return (
     <div className={`relative overflow-hidden ${className}`} style={{ borderRadius: PHOTO_RADIUS, background: "var(--surface)" }}>
@@ -544,8 +726,14 @@ function PhotoOrInitial({ item, img, size, className, displayClass }: { item: Pu
           style={{ filter: off ? "grayscale(1)" : undefined }}
         />
       ) : (
-        <span className={`flex h-full w-full items-center justify-center text-[44px] opacity-40 ${displayClass}`} style={displayStyle(displayClass)} aria-hidden>
-          {item.name.trim().charAt(0)}
+        <span
+          className="flex h-full w-full items-center justify-center"
+          style={{ backgroundImage: "radial-gradient(var(--line) 1.2px, transparent 1.2px)", backgroundSize: "12px 12px", color: "var(--muted)" }}
+          aria-hidden
+        >
+          <svg viewBox="0 0 24 24" className="h-9 w-9 opacity-60" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M7 3v8M4.5 3v5a2.5 2.5 0 0 0 5 0V3M7 11v10M17 21V3c-2 1.5-3 4-3 7v3h3" />
+          </svg>
         </span>
       )}
       {off && (
@@ -557,12 +745,37 @@ function PhotoOrInitial({ item, img, size, className, displayClass }: { item: Pu
   );
 }
 
-function GridItem({ item, index, img, displayClass }: { item: PublicItem; index: number; img: Img; displayClass: string }) {
+function GridItem({ item, index, img, displayClass, textOnly, onOpen }: { item: PublicItem; index: number; img: Img; displayClass: string; textOnly: boolean; onOpen: () => void }) {
   const off = !item.available;
+  // Si ningún producto de la categoría tiene foto, la cuadrícula se arma con tarjetas de texto.
+  if (textOnly) {
+    return (
+      <li
+        {...tap(onOpen)}
+        className="anim-rise flex min-h-[132px] min-w-0 cursor-pointer flex-col p-3"
+        style={{ background: "var(--surface)", borderRadius: PHOTO_RADIUS, opacity: off ? 0.65 : 1, "--i": Math.min(index, 8) } as CSSProperties}
+      >
+        <h3 className={`line-clamp-3 text-[17px] leading-snug ${displayClass}`} style={displayStyle(displayClass)}>
+          <Name item={item} />
+        </h3>
+        {item.description && <p className="mt-1 line-clamp-2 text-[13px] leading-snug text-[var(--muted)]">{item.description}</p>}
+        <p className="mt-auto pt-2 text-[15px] font-semibold tabular-nums" style={priceColor(off)}>
+          {off ? <span className="text-[13px] uppercase tracking-wide">Agotado</span> : (
+            <>
+              {item.variants.length > 0 && <span className="font-normal text-[var(--muted)]">desde </span>}
+              {formatPrice(fromPrice(item))}
+            </>
+          )}
+        </p>
+      </li>
+    );
+  }
   return (
-    <li className="anim-rise flex min-w-0 flex-col" style={{ opacity: off ? 0.65 : 1, "--i": Math.min(index, 8) } as CSSProperties}>
+    <li {...tap(onOpen)} className="anim-rise flex min-w-0 cursor-pointer flex-col" style={{ opacity: off ? 0.65 : 1, "--i": Math.min(index, 8) } as CSSProperties}>
       <PhotoOrInitial item={item} img={img} size="thumb" className="aspect-square w-full" displayClass={displayClass} />
-      <h3 className="mt-2 line-clamp-2 text-[15px] font-semibold leading-snug">{item.name}</h3>
+      <h3 className="mt-2 line-clamp-2 text-[15px] font-semibold leading-snug">
+        <Name item={item} />
+      </h3>
       {item.description && <p className="mt-0.5 line-clamp-2 text-[13px] leading-snug text-[var(--muted)]">{item.description}</p>}
       <p className="mt-1 text-[15px] font-semibold tabular-nums" style={priceColor(off)}>
         {item.variants.length > 0 && <span className="font-normal text-[var(--muted)]">desde </span>}
@@ -572,14 +785,14 @@ function GridItem({ item, index, img, displayClass }: { item: PublicItem; index:
   );
 }
 
-function FeatureItem({ item, index, img, displayClass }: { item: PublicItem; index: number; img: Img; displayClass: string }) {
+function FeatureItem({ item, index, img, displayClass, onOpen }: { item: PublicItem; index: number; img: Img; displayClass: string; onOpen: () => void }) {
   const off = !item.available;
   return (
-    <li className="anim-rise border-b px-2 py-5" style={{ borderColor: "var(--line)", opacity: off ? 0.65 : 1, "--i": Math.min(index, 8) } as CSSProperties}>
+    <li {...tap(onOpen)} className="anim-rise cursor-pointer border-b px-2 py-5" style={{ borderColor: "var(--line)", opacity: off ? 0.65 : 1, "--i": Math.min(index, 8) } as CSSProperties}>
       <PhotoOrInitial item={item} img={img} size="full" className="aspect-[4/3] w-full" displayClass={displayClass} />
       <div className="mt-3 flex items-baseline justify-between gap-3">
         <h3 className={`text-[22px] leading-tight ${displayClass}`} style={displayStyle(displayClass)}>
-          {item.name}
+          <Name item={item} />
         </h3>
         {item.variants.length === 0 && (
           <span className="shrink-0 text-[18px] font-semibold tabular-nums" style={priceColor(off)}>
@@ -605,13 +818,49 @@ function FeatureItem({ item, index, img, displayClass }: { item: PublicItem; ind
   );
 }
 
-function ItemRow({ item, img, index }: { item: PublicItem; img: (id: string, s: "thumb" | "full") => string; index: number }) {
+/** Destacada sin foto: el nombre manda, en la tipografía de la plantilla y a tamaño grande. */
+function EditorialItem({ item, index, displayClass, onOpen }: { item: PublicItem; index: number; displayClass: string; onOpen: () => void }) {
   const off = !item.available;
   return (
-    <li className="anim-rise flex gap-4 border-b px-2 py-4" style={{ borderColor: "var(--line)", opacity: off ? 0.6 : 1, "--i": Math.min(index, 8) } as CSSProperties}>
+    <li {...tap(onOpen)} className="anim-rise cursor-pointer border-b px-2 py-5" style={{ borderColor: "var(--line)", opacity: off ? 0.65 : 1, "--i": Math.min(index, 8) } as CSSProperties}>
+      <div className="flex items-baseline justify-between gap-4">
+        <h3 className={`text-[22px] leading-tight ${displayClass}`} style={displayStyle(displayClass)}>
+          <Name item={item} />
+        </h3>
+        {item.variants.length === 0 && (
+          <span className="shrink-0 text-[18px] font-semibold tabular-nums" style={priceColor(off)}>
+            {formatPrice(item.priceCents)}
+          </span>
+        )}
+      </div>
+      {item.description && <p className="mt-1.5 max-w-[34ch] text-[15px] leading-relaxed text-[var(--muted)]">{item.description}</p>}
+      {item.variants.length > 0 && (
+        <p className="mt-2 text-[15px]">
+          {item.variants.map((v, k) => (
+            <span key={v.name}>
+              {k > 0 && <span className="mx-2 text-[var(--line)]">/</span>}
+              <span className="text-[var(--muted)]">{v.name}</span>{" "}
+              <span className="font-semibold tabular-nums" style={priceColor(off)}>
+                {formatPrice(v.priceCents)}
+              </span>
+            </span>
+          ))}
+        </p>
+      )}
+      <Badges item={item} />
+    </li>
+  );
+}
+
+function ItemRow({ item, img, index, onOpen }: { item: PublicItem; img: Img; index: number; onOpen: () => void }) {
+  const off = !item.available;
+  return (
+    <li {...tap(onOpen)} className="anim-rise flex cursor-pointer gap-4 border-b px-2 py-4" style={{ borderColor: "var(--line)", opacity: off ? 0.6 : 1, "--i": Math.min(index, 8) } as CSSProperties}>
       <div className="min-w-0 flex-1">
-        <div className="flex items-baseline justify-between gap-3">
-          <h3 className="text-[17px] font-semibold leading-snug">{item.name}</h3>
+        <div className="flex flex-wrap items-baseline justify-between gap-x-3">
+          <h3 className="text-[17px] font-semibold leading-snug">
+            <Name item={item} />
+          </h3>
           {item.variants.length === 0 && (
             <span className="shrink-0 text-[17px] font-semibold tabular-nums" style={{ color: off ? "var(--muted)" : "var(--accent)" }}>
               {formatPrice(item.priceCents)}

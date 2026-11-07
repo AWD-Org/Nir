@@ -308,12 +308,15 @@ export async function saveItem(id: string | null, input: ItemInput) {
       const snap = await tx.get(ref);
       const draft = snap.data() as { categories: Record<string, unknown>; items: Record<string, MenuItem>; itemCount: number };
       if (!draft.categories[p.data.categoryId]) throw new ActionError("La categoría ya no existe.");
+      if (p.data.featured && !draft.items[id ?? ""]?.featured && countFeatured(draft.items) >= LIMITS.featured) {
+        throw new ActionError(`Puedes tener hasta ${LIMITS.featured} favoritos de la casa. Quita uno para agregar otro.`);
+      }
       const now = nowTs();
       if (id) {
         const prev = draft.items[id];
         if (!prev) throw new ActionError("El producto ya no existe.");
         const order = prev.categoryId === p.data.categoryId ? prev.order : nextOrder(draft.items, p.data.categoryId);
-        tx.update(ref, { [`items.${id}`]: { ...p.data, order }, updatedAt: now, updatedBy: ctx.session.uid });
+        tx.update(ref, { [`items.${id}`]: { ...p.data, featured: p.data.featured ?? prev.featured ?? false, order }, updatedAt: now, updatedBy: ctx.session.uid });
         return id;
       }
       if (draft.itemCount >= LIMITS.items) throw new ActionError(`Tu carta llegó al máximo de ${LIMITS.items} productos.`);
@@ -343,7 +346,7 @@ export async function duplicateItem(id: string) {
     if (!item) throw new ActionError("El producto ya no existe.");
     const { order: _order, ...rest } = item;
     void _order;
-    const r = await saveItem(null, { ...rest, name: `${item.name} (copia)`.slice(0, 80) } as ItemInput);
+    const r = await saveItem(null, { ...rest, featured: false, name: `${item.name} (copia)`.slice(0, 80) } as ItemInput);
     if (!r.ok) throw new ActionError(r.error);
     return r.data;
   });
@@ -363,6 +366,24 @@ export async function setAvailable(id: string, available: boolean) {
     const ctx = await ownerForAction();
     await touchDraft(ctx, { [`items.${id}.available`]: available });
     await afterChange(ctx, "item.available", { id, available });
+  });
+}
+
+const countFeatured = (items: Record<string, MenuItem>) => Object.values(items).filter((i) => i.featured).length;
+
+/** Favorito de la casa: aparece arriba de la carta. Se publica al instante. */
+export async function setFeatured(id: string, featured: boolean) {
+  return run(async () => {
+    const ctx = await ownerForAction();
+    if (featured) {
+      const draft = await getDraft(ctx.tenant.id);
+      if (!draft.items[id]) throw new ActionError("El producto ya no existe.");
+      if (!draft.items[id].featured && countFeatured(draft.items) >= LIMITS.featured) {
+        throw new ActionError(`Puedes tener hasta ${LIMITS.featured} favoritos de la casa. Quita uno para agregar otro.`);
+      }
+    }
+    await touchDraft(ctx, { [`items.${id}.featured`]: featured });
+    await afterChange(ctx, "item.featured", { id, featured });
   });
 }
 
