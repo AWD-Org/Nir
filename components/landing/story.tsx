@@ -10,13 +10,23 @@ import {
   useTransform,
 } from "motion/react";
 import Link from "next/link";
-import { useMemo, useRef, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { PublicView, type View } from "@/components/public/public-view";
 import { Phone } from "@/components/ui/phone";
 import { demoPage } from "@/lib/demo";
 import { NirCard } from "./nir-card";
 
 const EASE = [0.22, 1, 0.36, 1] as const;
+
+// La pantalla del celular solo se vuelve a dibujar cuando cambia lo que muestra, no en cada paso del scroll.
+const Screen = memo(PublicView);
+
+/** true en pantallas táctiles: ahí el scroll ya trae su propia inercia y no se suaviza otra vez. */
+function useCoarse() {
+  const [coarse, setCoarse] = useState(false);
+  useEffect(() => setCoarse(window.matchMedia("(pointer: coarse)").matches), []);
+  return coarse;
+}
 
 /** Momentos de la historia: el scroll es el comensal (y luego el dueño). */
 const STEPS = [
@@ -45,7 +55,10 @@ export function Story({ kitUrl }: { kitUrl: string }) {
   const ref = useRef<HTMLDivElement>(null);
   const reduce = useReducedMotion();
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end end"] });
-  const p = useSpring(scrollYProgress, { stiffness: 140, damping: 30, mass: 0.4 });
+  const smooth = useSpring(scrollYProgress, { stiffness: 140, damping: 30, mass: 0.4 });
+  // En celular la escena sigue al dedo sin retraso; el resorte solo suaviza la rueda del mouse.
+  const coarse = useCoarse();
+  const p = coarse ? scrollYProgress : smooth;
   const [step, setStep] = useState(0);
   const [soldOut, setSoldOut] = useState(false);
 
@@ -69,6 +82,13 @@ export function Story({ kitUrl }: { kitUrl: string }) {
   const lampY = useTransform(p, [0, 1], ["-6%", "8%"]);
   const progressH = useTransform(scrollYProgress, [0, 1], ["0%", "100%"]);
 
+  const goTo = (at: number) => {
+    const el = ref.current;
+    if (!el) return;
+    const top = el.offsetTop + (el.offsetHeight - innerHeight) * (at + 0.03);
+    window.scrollTo({ top, behavior: "smooth" });
+  };
+
   const page = useMemo(() => {
     const base = demoPage("noche");
     if (!soldOut) return base;
@@ -82,7 +102,7 @@ export function Story({ kitUrl }: { kitUrl: string }) {
   const view: View = step === 2 || step === 3 ? "menu" : "home";
 
   return (
-    <section ref={ref} className="relative h-[560vh]" aria-label="Cómo funciona Nir en la mesa">
+    <section ref={ref} className="relative h-[430vh] lg:h-[560vh]" aria-label="Cómo funciona Nir en la mesa">
       <div className="sticky top-0 h-svh overflow-hidden">
         {/* Mesa vista desde arriba */}
         <motion.div className="absolute inset-0 will-change-transform" style={{ scale: reduce ? 1 : tableScale }} aria-hidden>
@@ -98,9 +118,9 @@ export function Story({ kitUrl }: { kitUrl: string }) {
         <div className="relative mx-auto grid h-full max-w-[1280px] grid-rows-[auto_1fr] gap-4 px-5 pt-24 md:px-10 lg:grid-cols-12 lg:grid-rows-1 lg:items-center lg:gap-10 lg:pt-0">
           {/* Texto */}
           <div className="relative z-20 lg:col-span-6">
-            <AnimatePresence mode="wait" initial={false}>
+            <AnimatePresence mode="popLayout" initial={false}>
               {step === 0 ? (
-                <motion.div key="hero" exit={{ opacity: 0, y: -24 }} transition={{ duration: 0.35, ease: EASE }}>
+                <motion.div key="hero" exit={{ opacity: 0, y: -16 }} transition={{ duration: 0.2, ease: EASE }}>
                   <h1 className="max-w-[12ch] text-[clamp(42px,6.2vw,92px)] font-semibold leading-[0.93] tracking-[-0.035em] text-[#F4F1EA]">
                     Tu restaurante, a un toque de cada mesa.
                   </h1>
@@ -122,7 +142,7 @@ export function Story({ kitUrl }: { kitUrl: string }) {
                   key={step}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  exit={{ opacity: 0, transition: { duration: 0.2 } }}
+                  exit={{ opacity: 0, transition: { duration: 0.12 } }}
                   className=""
                 >
                   <h2 className="max-w-[13ch] text-[clamp(38px,5.6vw,80px)] font-semibold leading-[0.95] tracking-[-0.03em] text-[#F4F1EA]">
@@ -131,7 +151,7 @@ export function Story({ kitUrl }: { kitUrl: string }) {
                   <motion.p
                     initial={{ opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, ease: EASE, delay: 0.25 }}
+                    transition={{ duration: 0.4, ease: EASE, delay: 0.12 }}
                     className="mt-5 max-w-[42ch] text-[clamp(16px,1.4vw,19px)] leading-relaxed text-[#F4F1EA]/70"
                   >
                     {COPY[step]!.p}
@@ -174,7 +194,7 @@ export function Story({ kitUrl }: { kitUrl: string }) {
               {/* Celular del comensal */}
               <motion.div className="absolute inset-0 z-20 will-change-transform" style={{ y: dinerY, rotate: dinerRotate, x: dinerX }}>
                 <Phone className="shadow-[0_50px_100px_-30px_rgba(0,0,0,0.95)]">
-                  <PublicView page={page} mode="preview" forceView={view} highlight={step === 4 ? "reviews" : undefined} />
+                  <Screen page={page} mode="preview" forceView={view} highlight={step === 4 ? "reviews" : undefined} />
                   <AnimatePresence>
                     {step === 0 && (
                       <motion.div
@@ -197,6 +217,24 @@ export function Story({ kitUrl }: { kitUrl: string }) {
         </div>
 
         {/* Progreso de la historia (navegable) */}
+        {/* Celular: en qué momento vas y salto directo a los demás */}
+        <nav className="absolute inset-x-0 bottom-[max(16px,env(safe-area-inset-bottom))] z-30 flex justify-center md:hidden" aria-label="Momentos">
+          <ol className="flex items-center gap-1 rounded-full bg-[#0D0D0F]/80 px-2 py-1.5">
+            {STEPS.map((s, i) => (
+              <li key={s.label}>
+                <button
+                  onClick={() => goTo(s.at)}
+                  className="flex h-8 items-center px-1.5"
+                  aria-label={s.label}
+                  aria-current={i === step ? "step" : undefined}
+                >
+                  <span className={`block h-1.5 rounded-full transition-all duration-300 ${i === step ? "w-6 bg-[#FA1F6F]" : "w-1.5 bg-[#F4F1EA]/35"}`} />
+                </button>
+              </li>
+            ))}
+          </ol>
+        </nav>
+
         <nav className="absolute bottom-8 left-5 z-30 hidden md:left-10 md:flex md:items-end md:gap-5" aria-label="Momentos">
           <div className="relative h-24 w-px bg-[#F4F1EA]/15">
             <motion.div className="absolute inset-x-0 top-0 bg-[#FA1F6F]" style={{ height: progressH }} />
@@ -205,12 +243,7 @@ export function Story({ kitUrl }: { kitUrl: string }) {
             {STEPS.map((s, i) => (
               <li key={s.label}>
                 <button
-                  onClick={() => {
-                    const el = ref.current;
-                    if (!el) return;
-                    const top = el.offsetTop + (el.offsetHeight - innerHeight) * (s.at + 0.03);
-                    window.scrollTo({ top, behavior: "smooth" });
-                  }}
+                  onClick={() => goTo(s.at)}
                   className={`text-left text-[13px] transition-colors ${i === step ? "text-[#F4F1EA]" : "text-[#F4F1EA]/40 hover:text-[#F4F1EA]/70"}`}
                   aria-current={i === step ? "step" : undefined}
                 >
@@ -232,7 +265,7 @@ function MaskWords({ text }: { text: string }) {
     <span aria-label={text}>
       {words.map((w, i) => (
         <span key={i} aria-hidden className="inline-block overflow-hidden pb-[0.1em] align-bottom">
-          <motion.span className="inline-block" initial={{ y: "110%" }} animate={{ y: 0 }} transition={{ duration: 0.65, ease: EASE, delay: i * 0.05 }}>
+          <motion.span className="inline-block" initial={{ y: "110%" }} animate={{ y: 0 }} transition={{ duration: 0.45, ease: EASE, delay: i * 0.03 }}>
             {w}
             {i < words.length - 1 ? " " : ""}
           </motion.span>
