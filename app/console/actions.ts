@@ -12,10 +12,8 @@ import { slugify, validateSlug } from "@/lib/domain/slug";
 import { statusFor } from "@/lib/domain/status";
 import type { Card, Tenant, TenantStatus } from "@/lib/domain/types";
 import { logAudit } from "@/lib/server/audit";
-import { col, draftRef, fromFs, getTenant, nowTs, ts } from "@/lib/server/db";
-import { newId } from "@/lib/domain/id";
-import { parseMenuCsv, sameCategory } from "@/lib/domain/menu-import";
-import type { MenuCategory, MenuItem } from "@/lib/domain/types";
+import { col, fromFs, getTenant, nowTs, ts } from "@/lib/server/db";
+import { applyMenuImport } from "@/lib/server/menu-import";
 import { publishTenant } from "@/lib/server/publish";
 import { ActionError, getSession, isStaffRole, run, staffForAction, VIEW_AS_COOKIE } from "@/lib/server/session";
 
@@ -245,62 +243,12 @@ export async function changeSlug(tenantId: string, raw: string) {
 
 /* ---------- Cargar carta desde CSV ---------- */
 
-/**
- * Carga una carta completa desde texto CSV (ver docs/importar-carta.md).
- * "append" agrega a la carta actual y reutiliza categorías con el mismo nombre;
- * "replace" borra la carta actual y deja solo lo del archivo. Si hay errores no carga nada.
- */
+/** Carga una carta desde CSV (ver docs/importar-carta.md). */
 export async function importMenu(tenantId: string, csv: string, mode: "append" | "replace") {
   return run(async () => {
     const s = await staffForAction();
-    if (csv.length > 400_000) throw new ActionError("El archivo es demasiado grande.");
-    const parsed = parseMenuCsv(csv);
-    if (parsed.errors.length) throw new ActionError(`El archivo tiene ${parsed.errors.length} errores. Corrígelos y vuelve a intentarlo.`);
-    if (!parsed.items.length) throw new ActionError("El archivo no tiene productos.");
     await tenantOr404(tenantId);
-
-    const ref = draftRef(tenantId);
-    const result = await adminDb().runTransaction(async (tx) => {
-      const snap = await tx.get(ref);
-      const current = (snap.data() ?? { categories: {}, items: {} }) as { categories: Record<string, MenuCategory>; items: Record<string, MenuItem> };
-      const categories: Record<string, MenuCategory> = mode === "replace" ? {} : { ...current.categories };
-      const items: Record<string, MenuItem> = mode === "replace" ? {} : { ...current.items };
-
-      let catOrder = Math.max(-1, ...Object.values(categories).map((c) => c.order)) + 1;
-      const catId = new Map<string, string>();
-      for (const name of parsed.categories) {
-        const existing = Object.entries(categories).find(([, c]) => sameCategory(c.name, name));
-        if (existing) catId.set(name.toLowerCase(), existing[0]);
-        else {
-          const id = newId("c", 8);
-          categories[id] = { name, order: catOrder++, visible: true };
-          catId.set(name.toLowerCase(), id);
-        }
-      }
-      const findCat = (name: string) => catId.get(name.toLowerCase()) ?? catId.get(parsed.categories.find((c) => sameCategory(c, name))!.toLowerCase())!;
-
-      const orderIn = (cid: string) => Math.max(-1, ...Object.values(items).filter((i) => i.categoryId === cid).map((i) => i.order)) + 1;
-      for (const it of parsed.items) {
-        const cid = findCat(it.category);
-        items[newId("i", 8)] = {
-          categoryId: cid,
-          name: it.name,
-          description: it.description,
-          priceCents: it.priceCents,
-          variants: it.variants,
-          tags: it.tags,
-          imageId: null,
-          available: it.available,
-          order: orderIn(cid),
-        };
-      }
-      if (Object.keys(categories).length > LIMITS.categories) throw new ActionError(`Con este archivo la carta tendría más de ${LIMITS.categories} categorías.`);
-      if (Object.keys(items).length > LIMITS.items) throw new ActionError(`Con este archivo la carta tendría más de ${LIMITS.items} productos.`);
-
-      tx.set(ref, { categories, items, itemCount: Object.keys(items).length, updatedAt: nowTs(), updatedBy: s.uid });
-      return { categories: Object.keys(categories).length, items: Object.keys(items).length, imported: parsed.items.length };
-    });
-
+    const result = await applyMenuImport(tenantId, csv, mode, s.uid);
     await logAudit(s, tenantId, mode === "replace" ? "menu.import.replace" : "menu.import.append", null, result);
     await publishTenant(tenantId);
     refresh(tenantId);

@@ -9,11 +9,23 @@ import { TAGS } from "@/lib/domain/constants";
 import { IMPORT_TEMPLATE, parseMenuCsv, sameCategory } from "@/lib/domain/menu-import";
 import { formatPrice } from "@/lib/domain/money";
 import { importMenu } from "@/app/console/actions";
+import { importMyMenu } from "@/app/admin/actions";
 
 const TAG_LABEL = Object.fromEntries(TAGS.map((t) => [t.id, t.label]));
 
 /** Cargar la carta de un negocio pegando o subiendo un CSV, con vista previa y errores por línea. */
-export function MenuImport({ tenantId, currentItems }: { tenantId: string; currentItems: number }) {
+export function MenuImport({
+  tenantId,
+  currentItems,
+  target = "console",
+  onDone,
+}: {
+  tenantId?: string;
+  currentItems: number;
+  /** console: AMOXTLI® carga la carta de un negocio. admin: el dueño (o soporte viendo como él) carga la suya. */
+  target?: "console" | "admin";
+  onDone?: () => void;
+}) {
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
   const [text, setText] = useState("");
@@ -38,12 +50,13 @@ export function MenuImport({ tenantId, currentItems }: { tenantId: string; curre
 
   function load() {
     start(async () => {
-      const r = await importMenu(tenantId, text, mode);
+      const r = target === "admin" ? await importMyMenu(text, mode) : await importMenu(tenantId!, text, mode);
       if (!r.ok) return void toast.error(r.error);
       const d = r.data!;
       toast.success(`Carta cargada: ${d.imported} productos. Ahora tiene ${d.items} productos en ${d.categories} categorías.`);
       setText("");
-      router.refresh();
+      if (onDone) onDone();
+      else router.refresh();
     });
   }
 

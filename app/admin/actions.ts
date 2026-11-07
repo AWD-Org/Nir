@@ -24,6 +24,7 @@ import { col, draftRef, getDraft, nowTs } from "@/lib/server/db";
 import { publishTenant, writePublicPage } from "@/lib/server/publish";
 import { ActionError, getSession, ownerForAction, run, type OwnerContext } from "@/lib/server/session";
 import { isWebp } from "@/lib/media/webp";
+import { applyMenuImport } from "@/lib/server/menu-import";
 
 /* ---------- Alta del negocio (RF05, RF06) ---------- */
 
@@ -382,5 +383,17 @@ export async function reorderItems(ids: string[]) {
     ids.slice(0, LIMITS.items).forEach((id, i) => (update[`items.${id}.order`] = i));
     await touchDraft(ctx, update);
     await afterChange(ctx, "item.reorder");
+  });
+}
+
+/* ---------- Cargar carta desde archivo ---------- */
+
+export async function importMyMenu(csv: string, mode: "append" | "replace") {
+  return run(async () => {
+    const ctx = await ownerForAction();
+    const result = await applyMenuImport(ctx.tenant.id, csv, mode, ctx.session.uid);
+    await logAudit(ctx.session, ctx.tenant.id, mode === "replace" ? "menu.import.replace" : "menu.import.append", null, result);
+    await publishTenant(ctx.tenant.id);
+    return result;
   });
 }

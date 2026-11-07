@@ -12,7 +12,7 @@ import {
 } from "@dnd-kit/core";
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Check, Copy, Eye, EyeOff, GripVertical, Loader2, Pencil, Plus, Smartphone, Trash2, X } from "lucide-react";
+import { Check, Copy, Eye, EyeOff, FileUp, GripVertical, Loader2, Pencil, Plus, Smartphone, Trash2, X } from "lucide-react";
 import { useMemo, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { PublicView } from "@/components/public/public-view";
@@ -37,6 +37,7 @@ import {
   setPrice,
 } from "@/app/admin/actions";
 import { ImagePicker } from "./image-picker";
+import { MenuImport } from "@/components/console/menu-import";
 
 type Result = { ok: true; data?: unknown } | { ok: false; error: string };
 
@@ -46,6 +47,7 @@ export function MenuEditor({ tenant, initial, readOnly }: { tenant: Tenant; init
   const [catDialog, setCatDialog] = useState<{ id: string | null; name: string; visible: boolean } | null>(null);
   const [confirmCat, setConfirmCat] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
+  const [showImport, setShowImport] = useState(false);
 
   const cats = useMemo(
     () => Object.entries(draft.categories).sort(([, a], [, b]) => a.order - b.order),
@@ -113,6 +115,11 @@ export function MenuEditor({ tenant, initial, readOnly }: { tenant: Tenant; init
             <button className="btn-secondary lg:hidden" onClick={() => setShowPreview(true)}>
               <Smartphone className="h-4 w-4" /> Ver como comensal
             </button>
+            {!readOnly && (
+              <button className="btn-secondary" onClick={() => setShowImport(true)}>
+                <FileUp className="h-4 w-4" /> Cargar desde archivo
+              </button>
+            )}
             {!readOnly && cats.length > 0 && (
               <button className="btn-secondary" onClick={() => setCatDialog({ id: null, name: "", visible: true })}>
                 <Plus className="h-4 w-4" /> Categoría
@@ -174,6 +181,15 @@ export function MenuEditor({ tenant, initial, readOnly }: { tenant: Tenant; init
           </Phone>
         </div>
       </aside>
+
+      <Sheet
+        open={showImport}
+        onOpenChange={setShowImport}
+        title="Cargar carta desde archivo"
+        description="Pega o sube un CSV. Antes de cargar ves cómo queda y qué líneas tienen errores."
+      >
+        <MenuImport target="admin" currentItems={count} onDone={() => location.reload()} />
+      </Sheet>
 
       <Sheet open={showPreview} onOpenChange={setShowPreview} title="Así lo ve el comensal">
         <div className="-mx-5 -my-5 h-[78dvh] overflow-y-auto [&_.min-h-dvh]:min-h-full">
