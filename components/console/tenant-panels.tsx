@@ -10,6 +10,11 @@ import { formatDate } from "@/lib/domain/dates";
 import { parsePrice } from "@/lib/domain/money";
 import type { Card, PaymentConcept, Tenant } from "@/lib/domain/types";
 import { lockTag, nfcSupported, verifyUrl, writeUrl } from "@/lib/cards/nfc";
+import { cardUrl } from "@/lib/cards/suffix";
+import { SITE_URL } from "@/lib/domain/links";
+
+/** La dirección de la tarjeta se arma con el dominio vigente, no con el que había al generarla. */
+const urlOf = (c: Card) => cardUrl(SITE_URL, c.slug, c.table, c.suffix);
 import { changeSlug, disableCard, generateCards, markCardWritten, recordDelivery, recordPayment, setStatus, viewAs } from "@/app/console/actions";
 
 type R = { ok: true; data?: unknown } | { ok: false; error: string };
@@ -157,7 +162,7 @@ export function CardsPanel({ tenant, cards }: { tenant: Tenant; cards: Card[] })
       const bytes = await buildCardsPdf({
         name: tenant.name,
         logoImageId: tenant.profile.logoImageId,
-        cards: list.map((c) => ({ table: c.table, url: c.url })),
+        cards: list.map((c) => ({ table: c.table, url: urlOf(c) })),
         wifi: tenant.wifi.enabled ? { ssid: tenant.wifi.ssid, password: tenant.wifi.password } : null,
       });
       const url = URL.createObjectURL(new Blob([bytes as BlobPart], { type: "application/pdf" }));
@@ -178,9 +183,9 @@ export function CardsPanel({ tenant, cards }: { tenant: Tenant; cards: Card[] })
     const ctrl = new AbortController();
     try {
       setNfc({ card, step: "Acerca la tarjeta al celular para grabar." });
-      await writeUrl(card.url, ctrl.signal);
+      await writeUrl(urlOf(card), ctrl.signal);
       setNfc({ card, step: "Grabada. Acércala otra vez para verificar." });
-      const ok = await verifyUrl(card.url, ctrl.signal);
+      const ok = await verifyUrl(urlOf(card), ctrl.signal);
       if (!ok) throw new Error("La tarjeta no tiene la dirección correcta. Vuelve a grabarla.");
       setNfc({ card, step: "Verificada. Acércala una última vez para bloquearla." });
       await lockTag(ctrl.signal);
@@ -233,7 +238,7 @@ export function CardsPanel({ tenant, cards }: { tenant: Tenant; cards: Card[] })
               {cards.map((c) => (
                 <tr key={c.id} className={`border-b border-line/70 last:border-0 ${c.status === "disabled" ? "text-ink-3" : ""}`}>
                   <td className="num px-3 py-2">{c.table}</td>
-                  <td className="num px-3 py-2">{c.url.replace(/^https?:\/\//, "")}</td>
+                  <td className="num px-3 py-2">{urlOf(c).replace(/^https?:\/\//, "")}</td>
                   <td className="px-3 py-2">{CARD_STATUS[c.status]}{c.disabledAt ? ` · ${formatDate(c.disabledAt)}` : ""}</td>
                   <td className="px-3 py-2">{c.writtenAt ? "Bloqueada" : "—"}</td>
                   <td className="px-3 py-2">
