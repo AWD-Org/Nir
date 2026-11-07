@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, useScroll, useTransform } from "motion/react";
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { PublicView } from "@/components/public/public-view";
 import { Phone } from "@/components/ui/phone";
 import { demoPage } from "@/lib/demo";
@@ -12,6 +12,16 @@ export function TemplatesRail() {
   const ref = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end end"] });
   const x = useTransform(scrollYProgress, [0.05, 0.95], ["0%", "-52%"]);
+  // El carril solo avanza con el scroll vertical en escritorio. En celular se desliza con el dedo
+  // y no debe moverse solo (antes se recorría y dejaba los teléfonos cortados).
+  const [desktop, setDesktop] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1024px)");
+    const sync = () => setDesktop(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
 
   return (
     <section ref={ref} className="relative lg:h-[260vh]" aria-labelledby="tpl-title">
@@ -26,7 +36,7 @@ export function TemplatesRail() {
         </div>
         <motion.div
           className="mt-10 flex snap-x snap-mandatory gap-8 overflow-x-auto px-5 pb-10 [scrollbar-width:none] md:px-10 lg:w-max lg:snap-none lg:overflow-visible lg:pl-[max(40px,calc((100vw-1280px)/2+40px))]"
-          style={{ x }}
+          style={desktop ? { x } : undefined}
         >
           {TEMPLATE_LIST.map((t) => (
             <div key={t.id} className="flex shrink-0 snap-center items-end gap-8">
