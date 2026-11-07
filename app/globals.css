@@ -176,3 +176,20 @@ details[open] > :not(summary) { animation: rise 0.35s var(--ease-out-soft); }
   to { transform: scale(4.5); opacity: 0; }
 }
 .nir-ripple { animation: nir-ripple 1.6s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+
+/* Dentro del teléfono de la vista previa: el contenido arranca debajo de la cámara
+   y la barra de categorías se detiene justo abajo, tapando lo que pasa por detrás. */
+.phone-screen [data-section-bar] {
+  padding-top: 2.25rem;
+}
+.phone-screen [data-sticky-bar] {
+  top: 1.75rem;
+}
+.phone-screen [data-sticky-bar]::before {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  top: -1.75rem;
+  height: 1.75rem;
+  background: var(--bg);
+}

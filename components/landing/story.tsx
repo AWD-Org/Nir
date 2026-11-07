@@ -186,14 +186,14 @@ export function Story({ kitUrl }: { kitUrl: string }) {
 
               {/* Celular del dueño */}
               <motion.div className="absolute inset-0 z-10 will-change-transform" style={{ x: ownerX, rotate: ownerRotate, opacity: ownerOpacity }}>
-                <Phone className="shadow-[0_40px_90px_-30px_rgba(0,0,0,0.9)]">
+                <Phone interactive={false} className="shadow-[0_40px_90px_-30px_rgba(0,0,0,0.9)]">
                   <OwnerScreen soldOut={soldOut} />
                 </Phone>
               </motion.div>
 
               {/* Celular del comensal */}
               <motion.div className="absolute inset-0 z-20 will-change-transform" style={{ y: dinerY, rotate: dinerRotate, x: dinerX }}>
-                <Phone className="shadow-[0_50px_100px_-30px_rgba(0,0,0,0.95)]">
+                <Phone interactive={false} className="shadow-[0_50px_100px_-30px_rgba(0,0,0,0.95)]">
                   <Screen page={page} mode="preview" forceView={view} highlight={step === 4 ? "reviews" : undefined} />
                   <AnimatePresence>
                     {step === 0 && (

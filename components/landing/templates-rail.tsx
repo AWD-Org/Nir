@@ -40,7 +40,7 @@ export function TemplatesRail() {
         >
           {TEMPLATE_LIST.map((t) => (
             <div key={t.id} className="flex shrink-0 snap-center items-end gap-8">
-              <Phone className="shrink-0 shadow-[0_40px_90px_-30px_rgba(0,0,0,0.9)] lg:-mb-20 lg:origin-top lg:scale-[0.86]">
+              <Phone interactive={false} className="shrink-0 shadow-[0_40px_90px_-30px_rgba(0,0,0,0.9)] lg:-mb-20 lg:origin-top lg:scale-[0.86]">
                 <PublicView page={demoPage(t.id)} mode="preview" />
               </Phone>
               <div className="hidden w-[260px] pb-6 lg:block">
