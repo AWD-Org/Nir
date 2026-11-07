@@ -94,6 +94,10 @@ export function PublicView({ page, mode = "live", resolveImage, forceView, highl
 
   return (
     <div ref={rootRef} style={style} className="anim-fade min-h-full w-full overflow-x-clip" data-template={theme.template.id}>
+      {mode === "live" && (
+        // El navegador del celular pinta su barra superior, la inferior y el rebote del scroll con el fondo del documento.
+        <style>{`html,body{background:${theme.bg};color-scheme:${isDark(theme.bg) ? "dark" : "light"}}`}</style>
+      )}
       <div key={view} className={`mx-auto flex min-h-dvh w-full max-w-[480px] flex-col ${anim}`}>
         {view === "home" && (
           <Home page={page} displayClass={displayClass} img={img} go={go} tracker={tracker} template={theme.template.id} live={mode === "live"} highlight={highlight} />
@@ -591,4 +595,12 @@ function scrollParent(el: HTMLElement): HTMLElement | Window {
     p = p.parentElement;
   }
   return window;
+}
+
+function isDark(hex: string) {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
+  if (!m) return false;
+  const n = parseInt(m[1], 16);
+  const lum = 0.2126 * ((n >> 16) & 255) + 0.7152 * ((n >> 8) & 255) + 0.0722 * (n & 255);
+  return lum < 128;
 }

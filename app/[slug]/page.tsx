@@ -1,4 +1,5 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
+import { resolveTheme } from "@/lib/themes";
 import { notFound, permanentRedirect } from "next/navigation";
 import { PublicView } from "@/components/public/public-view";
 import { Unavailable } from "@/components/public/unavailable";
@@ -40,6 +41,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     },
     robots: { index: true, follow: true },
   };
+}
+
+export async function generateViewport({ params }: Props): Promise<Viewport> {
+  const { slug } = await params;
+  const { page } = await load(slug);
+  return { themeColor: page ? resolveTheme(page.theme).bg : "#121214" };
 }
 
 export default async function SlugPage({ params }: Props) {
