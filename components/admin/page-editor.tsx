@@ -41,7 +41,7 @@ export function PageEditor({ initial, draft, readOnly, hasCards }: { initial: Te
         <ProfileSection t={t} setT={setT} readOnly={readOnly} hasCards={hasCards} />
         <LinksSection t={t} setT={setT} readOnly={readOnly} />
         <WifiSection t={t} setT={setT} readOnly={readOnly} />
-        <ButtonsSection t={t} setT={setT} readOnly={readOnly} />
+        <ButtonsSection t={t} setT={setT} readOnly={readOnly} hasMenu={Object.values(draft.items).some((i) => draft.categories[i.categoryId]?.visible)} />
         <ThemeSection t={t} setT={setT} readOnly={readOnly} />
       </div>
 
@@ -280,7 +280,7 @@ function WifiSection({ t, setT, readOnly }: SectionProps) {
 
 /* ---------- Orden de botones ---------- */
 
-function ButtonsSection({ t, setT, readOnly }: SectionProps) {
+function ButtonsSection({ t, setT, readOnly, hasMenu }: SectionProps & { hasMenu: boolean }) {
   const d = useDirty(t.buttons);
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -293,7 +293,9 @@ function ButtonsSection({ t, setT, readOnly }: SectionProps) {
     setT((x) => ({ ...x, buttons: arrayMove(x.buttons, keys.indexOf(String(e.active.id)), keys.indexOf(String(e.over!.id))) }));
   };
   const missing = (b: ButtonConfig) =>
-    b.key === "reviews" && !t.links.googleReviewUrl
+    b.key === "menu" && !hasMenu
+      ? "Agrega productos a tu carta para que aparezca"
+      : b.key === "reviews" && !t.links.googleReviewUrl
       ? "Falta el enlace de reseñas"
       : b.key === "social" && !["instagram", "facebook", "tiktok", "whatsapp"].some((k) => t.links[k as SocialKey])
         ? "Agrega al menos una red"
