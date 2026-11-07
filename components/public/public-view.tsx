@@ -239,7 +239,7 @@ function LinkButton({ k, page, go, tracker, highlighted }: { k: ButtonKey; page:
   };
   const content = (
     <>
-      {ICONS[k]}
+      <span className="flex shrink-0">{ICONS[k]}</span>
       <span className="flex-1">{BUTTON_LABELS[k]}</span>
       <svg viewBox="0 0 24 24" className="h-4 w-4 opacity-70" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
         {k === "reviews" ? <path d="M7 17 17 7M9 7h8v8" /> : <path d="m9 6 6 6-6 6" />}
@@ -273,13 +273,13 @@ function LinkButton({ k, page, go, tracker, highlighted }: { k: ButtonKey; page:
 
 function SectionBar({ title, back, displayClass }: { title: string; back: () => void; displayClass: string }) {
   return (
-    <div className="flex items-center gap-2 px-3 pb-2 pt-3">
+    <div data-section-bar className="flex items-center gap-2 px-3 pb-2 pt-3">
       <button type="button" onClick={back} className="flex h-11 w-11 items-center justify-center" aria-label="Volver al inicio" style={{ borderRadius: "var(--radius)" }}>
         <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
           <path d="m15 6-6 6 6 6" />
         </svg>
       </button>
-      <h2 className={`text-[24px] leading-tight ${displayClass}`} style={{ fontFamily: "var(--display)", fontWeight: displayClass ? 800 : 400 }}>
+      <h2 className={`min-w-0 text-[24px] leading-tight ${displayClass}`} style={{ fontFamily: "var(--display)", fontWeight: displayClass ? 800 : 400 }}>
         {title}
       </h2>
     </div>
@@ -358,7 +358,7 @@ function MenuSection({
 
   return (
     <>
-      <div ref={barRef} className="sticky top-0 z-10" style={{ background: "var(--bg)" }}>
+      <div ref={barRef} data-sticky-bar className="sticky top-0 z-10" style={{ background: "var(--bg)" }}>
         <SectionBar title="Carta" back={back} displayClass={displayClass} />
         {cats.length > 1 && (
           <div ref={chipsRef} className="flex gap-2 overflow-x-auto px-4 pb-3 [scrollbar-width:none]" role="tablist" aria-label="Categorías">
@@ -480,9 +480,9 @@ function SocialSection({ page, displayClass, back, tracker }: { page: PublicPage
             onClick={() => tracker.social(k)}
             className="anim-rise flex min-h-14 items-center gap-3 border-[1.5px] px-5 text-[17px] font-medium"
           >
-            <SocialIcon k={k} className="h-6 w-6" />
-            <span className="flex-1">{SOCIAL_LABELS[k]}</span>
-            <span className="max-w-[45%] truncate text-[15px] text-[var(--muted)]">{k === "whatsapp" ? "Enviar mensaje" : v.replace(/^https?:\/\/(www\.)?/, "")}</span>
+            <SocialIcon k={k} className="h-6 w-6 shrink-0" />
+            <span className="min-w-0 flex-1 truncate">{SOCIAL_LABELS[k]}</span>
+            <span className="min-w-0 max-w-[45%] truncate text-[15px] text-[var(--muted)]">{k === "whatsapp" ? "Enviar mensaje" : v.replace(/^https?:\/\/(www\.)?/, "")}</span>
           </a>
         ))}
       </main>
