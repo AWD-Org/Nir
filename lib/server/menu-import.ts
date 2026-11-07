@@ -55,7 +55,7 @@ export async function applyMenuImport(tenantId: string, csv: string, mode: "appe
       }
       if (Object.keys(categories).length > LIMITS.categories) throw new ActionError(`Con este archivo la carta tendría más de ${LIMITS.categories} categorías.`);
       if (Object.values(items).filter((i) => i.featured).length > LIMITS.featured) {
-        throw new ActionError(`Con este archivo la carta tendría más de ${LIMITS.featured} favoritos de la casa.`);
+        throw new ActionError(`Con este archivo la carta tendría más de ${LIMITS.featured} recomendados de la casa.`);
       }
       if (Object.keys(items).length > LIMITS.items) throw new ActionError(`Con este archivo la carta tendría más de ${LIMITS.items} productos.`);
 

@@ -309,7 +309,7 @@ export async function saveItem(id: string | null, input: ItemInput) {
       const draft = snap.data() as { categories: Record<string, unknown>; items: Record<string, MenuItem>; itemCount: number };
       if (!draft.categories[p.data.categoryId]) throw new ActionError("La categoría ya no existe.");
       if (p.data.featured && !draft.items[id ?? ""]?.featured && countFeatured(draft.items) >= LIMITS.featured) {
-        throw new ActionError(`Puedes tener hasta ${LIMITS.featured} favoritos de la casa. Quita uno para agregar otro.`);
+        throw new ActionError(`Puedes tener hasta ${LIMITS.featured} recomendados de la casa. Quita uno para agregar otro.`);
       }
       const now = nowTs();
       if (id) {
@@ -371,7 +371,7 @@ export async function setAvailable(id: string, available: boolean) {
 
 const countFeatured = (items: Record<string, MenuItem>) => Object.values(items).filter((i) => i.featured).length;
 
-/** Favorito de la casa: aparece arriba de la carta. Se publica al instante. */
+/** Recomendado de la casa: etiqueta discreta junto al nombre. Se publica al instante. */
 export async function setFeatured(id: string, featured: boolean) {
   return run(async () => {
     const ctx = await ownerForAction();
@@ -379,7 +379,7 @@ export async function setFeatured(id: string, featured: boolean) {
       const draft = await getDraft(ctx.tenant.id);
       if (!draft.items[id]) throw new ActionError("El producto ya no existe.");
       if (!draft.items[id].featured && countFeatured(draft.items) >= LIMITS.featured) {
-        throw new ActionError(`Puedes tener hasta ${LIMITS.featured} favoritos de la casa. Quita uno para agregar otro.`);
+        throw new ActionError(`Puedes tener hasta ${LIMITS.featured} recomendados de la casa. Quita uno para agregar otro.`);
       }
     }
     await touchDraft(ctx, { [`items.${id}.featured`]: featured });

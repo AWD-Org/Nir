@@ -21,7 +21,7 @@ Primera línea con los encabezados. Separador coma (también acepta punto y coma
 | `variantes` | No | `Copa:90\|Botella:1200` | `Nombre:precio` separados por `\|`; el precio del producto es el de la primera |
 | `etiquetas` | No | `picante\|vegetariano` | `picante`, `vegetariano`, `vegano`, `sin-gluten`, `nuevo` |
 | `disponible` | No | `si` | `no` lo muestra como agotado; vacío = `si` |
-| `favorito` | No | `si` | Favorito de la casa: aparece arriba de la carta (máximo 8); vacío = `no` |
+| `favorito` | No | `si` | Recomendado de la casa: lleva una etiqueta discreta junto al nombre (máximo 8); vacío = `no` |
 
 ```csv
 categoria,producto,descripcion,precio,variantes,etiquetas,disponible,favorito
@@ -45,7 +45,7 @@ Reglas:
 - descripcion: copia la descripción de la carta si existe; si no, déjala vacía. No inventes descripciones.
 - etiquetas: solo si la carta lo indica, usando únicamente picante, vegetariano, vegano, sin-gluten o nuevo, separadas por |.
 - disponible: siempre si.
-- favorito: déjalo vacío (el dueño elige sus favoritos después).
+- favorito: déjalo vacío (el dueño elige sus recomendados después).
 - Encierra entre comillas dobles cualquier texto que lleve comas.
 - No inventes productos ni precios. Si un precio no se lee, escribe el producto con precio 0 y al final del bloque agrega una línea que empiece con # indicando cuáles revisar.
 - Si un mismo producto aparece en dos categorías, ponlo en ambas.

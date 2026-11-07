@@ -315,7 +315,6 @@ function MenuSection({
   const [detail, setDetail] = useState<PublicItem | null>(null);
   const closeDetail = useCallback(() => setDetail(null), []);
   const mainRef = useRef<HTMLElement>(null);
-  const featured = useMemo(() => cats.flatMap((c) => c.items.filter((i) => i.featured)), [cats]);
   const style = page.theme.menuStyle ?? "lista";
   const chipsRef = useRef<HTMLDivElement>(null);
   const barRef = useRef<HTMLDivElement>(null);
@@ -405,7 +404,6 @@ function MenuSection({
       </div>
 
       <main ref={mainRef} className="flex-1 px-4 pb-16">
-        {featured.length > 0 && <Favorites items={featured} img={img} displayClass={displayClass} onOpen={setDetail} />}
         {cats.length === 0 && <p className="px-2 py-10 text-[16px] text-[var(--muted)]">La carta se está preparando.</p>}
         {cats.map((c) => (
           <CategoryBlock key={c.id} cat={c} style={style} displayClass={displayClass} img={img} onOpen={setDetail} />
@@ -437,67 +435,28 @@ const tap = (onOpen: () => void) => ({
   },
 });
 
-/** Nombre del producto; si es favorito, la estrella va pegada a la primera palabra (nunca sola en un renglón). */
+/** Nombre del producto; si es recomendado de la casa, una etiqueta corta y discreta arriba del nombre. */
 function Name({ item }: { item: PublicItem }) {
   if (!item.featured) return <>{item.name}</>;
-  const [first, ...rest] = item.name.split(" ");
   return (
     <>
-      <span className="whitespace-nowrap">
+      <span
+        className="mb-0.5 flex items-center text-[12px] font-semibold normal-case tracking-normal"
+        style={{ color: "var(--accent)", fontFamily: "var(--body)", fontWeight: 600, fontSize: 12, lineHeight: 1.4 }}
+      >
         <FavStar />
-        {first}
+        Recomendado
       </span>
-      {rest.length > 0 && ` ${rest.join(" ")}`}
+      {item.name}
     </>
   );
 }
 
 function FavStar() {
   return (
-    <svg viewBox="0 0 24 24" className="-mt-0.5 mr-1 inline-block h-[0.85em] w-[0.85em] align-middle" fill="currentColor" style={{ color: "var(--accent)" }} aria-label="Favorito de la casa" role="img">
+    <svg viewBox="0 0 24 24" className="-mt-0.5 mr-1 inline-block h-[0.85em] w-[0.85em] align-middle" fill="currentColor" style={{ color: "var(--accent)" }} aria-hidden="true">
       <path d="m12 2.8 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.1 6.4 20l1.1-6.2L3 9.4l6.2-.9z" />
     </svg>
-  );
-}
-
-/** Favoritos de la casa: carrusel arriba de la carta. */
-function Favorites({ items, img, displayClass, onOpen }: { items: PublicItem[]; img: Img; displayClass: string; onOpen: (i: PublicItem) => void }) {
-  const withPhotos = items.some((i) => i.imageId);
-  return (
-    <section className="pt-6" aria-label="Favoritos de la casa">
-      <h2 className={`flex items-center gap-2 px-2 text-[20px] ${displayClass}`} style={displayStyle(displayClass)}>
-        <FavStar />
-        Favoritos de la casa
-      </h2>
-      <ul className="-mx-4 mt-3 flex snap-x gap-3 overflow-x-auto px-4 pb-1 [scrollbar-width:none]">
-        {items.map((i, n) => {
-          const off = !i.available;
-          return (
-            <li
-              key={i.id}
-              {...tap(() => onOpen(i))}
-              className="anim-rise w-[148px] shrink-0 cursor-pointer snap-start"
-              style={{ opacity: off ? 0.65 : 1, "--i": Math.min(n, 8) } as CSSProperties}
-            >
-              {withPhotos ? (
-                <PhotoOrInitial item={i} img={img} size="thumb" className="aspect-square w-full" />
-              ) : (
-                <div className="flex aspect-[4/3] w-full items-end p-3" style={{ background: "var(--surface)", borderRadius: PHOTO_RADIUS }}>
-                  <span className={`line-clamp-3 text-[18px] leading-tight ${displayClass}`} style={displayStyle(displayClass)}>
-                    {i.name}
-                  </span>
-                </div>
-              )}
-              {withPhotos && <h3 className="mt-2 line-clamp-2 text-[15px] font-semibold leading-snug">{i.name}</h3>}
-              <p className="mt-0.5 text-[15px] font-semibold tabular-nums" style={priceColor(off)}>
-                {i.variants.length > 0 && <span className="font-normal text-[var(--muted)]">desde </span>}
-                {formatPrice(fromPrice(i))}
-              </p>
-            </li>
-          );
-        })}
-      </ul>
-    </section>
   );
 }
 
@@ -557,7 +516,7 @@ function ItemDetail({ item, img, displayClass, anchor, onClose }: { item: Public
           {item.featured && (
             <p className="mb-1 flex items-center text-[13px] font-semibold" style={{ color: "var(--accent)" }}>
               <FavStar />
-              Favorito de la casa
+              Recomendado de la casa
             </p>
           )}
           <div className="flex items-baseline justify-between gap-4">
@@ -760,7 +719,7 @@ function GridItem({ item, index, img, displayClass, textOnly, onOpen }: { item: 
   return (
     <li {...tap(onOpen)} className="anim-rise flex min-w-0 cursor-pointer flex-col" style={{ opacity: off ? 0.65 : 1, "--i": Math.min(index, 8) } as CSSProperties}>
       <PhotoOrInitial item={item} img={img} size="thumb" className="aspect-square w-full" displayClass={displayClass} />
-      <h3 className="mt-2 line-clamp-2 text-[15px] font-semibold leading-snug">
+      <h3 className="mt-2 line-clamp-3 text-[15px] font-semibold leading-snug">
         <Name item={item} />
       </h3>
       {item.description && <p className="mt-0.5 line-clamp-2 text-[13px] leading-snug text-[var(--muted)]">{item.description}</p>}
@@ -777,7 +736,7 @@ function ItemRow({ item, img, index, onOpen }: { item: PublicItem; img: Img; ind
   return (
     <li {...tap(onOpen)} className="anim-rise flex cursor-pointer gap-4 border-b px-2 py-4" style={{ borderColor: "var(--line)", opacity: off ? 0.6 : 1, "--i": Math.min(index, 8) } as CSSProperties}>
       <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-baseline justify-between gap-x-3">
+        <div className="flex items-end justify-between gap-3">
           <h3 className="text-[17px] font-semibold leading-snug">
             <Name item={item} />
           </h3>

@@ -161,11 +161,11 @@ export function MenuEditor({ tenant, initial, readOnly }: { tenant: Tenant; init
                     }}
                     onFeatured={async (id, v) => {
                       if (v && Object.values(draft.items).filter((i) => i.featured).length >= LIMITS.featured) {
-                        toast.error(`Puedes tener hasta ${LIMITS.featured} favoritos de la casa. Quita uno para agregar otro.`);
+                        toast.error(`Puedes tener hasta ${LIMITS.featured} recomendados de la casa. Quita uno para agregar otro.`);
                         return;
                       }
                       patchItem(id, { featured: v });
-                      const r = await act(setFeatured(id, v), v ? "Agregado a favoritos de la casa" : "Quitado de favoritos");
+                      const r = await act(setFeatured(id, v), v ? "Marcado como recomendado de la casa" : "Ya no es recomendado");
                       if (!r.ok) patchItem(id, { featured: !v });
                     }}
                     onPrice={async (id, cents) => {
@@ -452,8 +452,8 @@ function ItemRow({
         onClick={() => onFeatured(!item.featured)}
         disabled={readOnly}
         aria-pressed={!!item.featured}
-        aria-label={item.featured ? `Quitar ${item.name} de favoritos de la casa` : `Marcar ${item.name} como favorito de la casa`}
-        title={item.featured ? "Favorito de la casa" : "Marcar como favorito de la casa"}
+        aria-label={item.featured ? `Quitar ${item.name} de recomendados de la casa` : `Marcar ${item.name} como recomendado de la casa`}
+        title={item.featured ? "Recomendado de la casa" : "Marcar como recomendado de la casa"}
         className={`flex h-10 w-9 shrink-0 items-center justify-center rounded-md transition-colors disabled:opacity-50 ${item.featured ? "text-[#D99A06]" : "text-ink-3 hover:text-ink"}`}
       >
         <Star className={`h-[18px] w-[18px] ${item.featured ? "anim-pop fill-current" : ""}`} />
@@ -722,10 +722,10 @@ function ItemSheet({
 
             <div className="flex items-center justify-between rounded-lg border border-line p-3">
               <div>
-                <p className="font-medium">Favorito de la casa</p>
-                <p className="text-sm text-ink-2">Aparece arriba de la carta, antes de las categorías. Hasta {LIMITS.featured}.</p>
+                <p className="font-medium">Recomendado de la casa</p>
+                <p className="text-sm text-ink-2">Lleva una etiqueta discreta de "Recomendado" junto a su nombre. Hasta {LIMITS.featured}.</p>
               </div>
-              <Switch checked={form.featured} onCheckedChange={(v) => set("featured", v)} label="Favorito de la casa" />
+              <Switch checked={form.featured} onCheckedChange={(v) => set("featured", v)} label="Recomendado de la casa" />
             </div>
 
             {error && <p role="alert" className="rounded-md border border-bad/20 bg-bad-tint px-3 py-2 text-[15px] text-bad">{error}</p>}
