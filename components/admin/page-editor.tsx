@@ -13,8 +13,8 @@ import { Sheet } from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
 import { BUTTON_LABELS, SOCIAL_LABELS } from "@/lib/domain/constants";
 import { buildPublicPage } from "@/lib/domain/publish";
-import type { ButtonConfig, MenuDraft, SocialKey, Tenant, TenantTheme } from "@/lib/domain/types";
-import { resolveTheme, TEMPLATE_LIST, TEMPLATES, themeIssues } from "@/lib/themes";
+import type { ButtonConfig, MenuDraft, MenuStyle, SocialKey, Tenant, TenantTheme } from "@/lib/domain/types";
+import { MENU_STYLES, resolveTheme, TEMPLATE_LIST, TEMPLATES, themeIssues, type ResolvedTheme } from "@/lib/themes";
 import { removeProfileImage, saveButtons, saveLinks, saveProfile, saveTheme, saveWifi } from "@/app/admin/actions";
 import { ImagePicker } from "./image-picker";
 
@@ -23,6 +23,9 @@ type Result = { ok: true } | { ok: false; error: string };
 export function PageEditor({ initial, draft, readOnly, hasCards }: { initial: Tenant; draft: MenuDraft; readOnly: boolean; hasCards: boolean }) {
   const [t, setT] = useState(initial);
   const [showPreview, setShowPreview] = useState(false);
+  // Al elegir un estilo de carta, la vista previa abre la carta para verlo de inmediato.
+  const [openMenu, setOpenMenu] = useState<{ view: "menu"; n: number } | undefined>();
+  const showMenu = () => setOpenMenu((o) => ({ view: "menu", n: (o?.n ?? 0) + 1 }));
   const preview = useMemo(() => buildPublicPage(t, draft), [t, draft]);
 
   return (
@@ -42,14 +45,14 @@ export function PageEditor({ initial, draft, readOnly, hasCards }: { initial: Te
         <LinksSection t={t} setT={setT} readOnly={readOnly} />
         <WifiSection t={t} setT={setT} readOnly={readOnly} />
         <ButtonsSection t={t} setT={setT} readOnly={readOnly} hasMenu={Object.values(draft.items).some((i) => draft.categories[i.categoryId]?.visible)} />
-        <ThemeSection t={t} setT={setT} readOnly={readOnly} />
+        <ThemeSection t={t} setT={setT} readOnly={readOnly} onMenuStyle={showMenu} />
       </div>
 
       <aside className="hidden lg:block">
         <div className="sticky top-8">
           <p className="mb-3 text-center text-sm text-ink-2">Vista previa en vivo</p>
           <Phone>
-            <PublicView key={preview.theme.templateId} page={preview} mode="preview" />
+            <PublicView key={preview.theme.templateId} page={preview} mode="preview" open={openMenu} />
           </Phone>
           <p className="mt-3 text-center text-sm text-ink-2">Se publica al guardar cada sección.</p>
         </div>
@@ -57,7 +60,7 @@ export function PageEditor({ initial, draft, readOnly, hasCards }: { initial: Te
 
       <Sheet open={showPreview} onOpenChange={setShowPreview} title="Así lo ve el comensal">
         <div className="-mx-5 -my-5 h-[78dvh] overflow-y-auto [&_.min-h-dvh]:min-h-full">
-          <PublicView page={preview} mode="preview" />
+          <PublicView page={preview} mode="preview" open={openMenu} />
         </div>
       </Sheet>
     </div>
@@ -352,7 +355,7 @@ function ButtonRow({ b, note, readOnly, onToggle }: { b: ButtonConfig; note: str
 
 /* ---------- Diseño por plantillas (RF15) ---------- */
 
-function ThemeSection({ t, setT, readOnly }: SectionProps) {
+function ThemeSection({ t, setT, readOnly, onMenuStyle }: SectionProps & { onMenuStyle: () => void }) {
   const d = useDirty(t.theme);
   const issues = themeIssues(t.theme);
   const set = (patch: Partial<TenantTheme>) => setT((x) => ({ ...x, theme: { ...x.theme, ...patch } }));
@@ -360,7 +363,7 @@ function ThemeSection({ t, setT, readOnly }: SectionProps) {
     <Section
       id="diseno"
       title="Diseño"
-      description="Elige una plantilla y ajusta los colores a tu marca."
+      description="Elige una plantilla, ajusta los colores a tu marca y escoge cómo se acomoda tu carta."
       readOnly={readOnly}
       dirty={d.dirty}
       disabledReason={issues[0] ?? null}
@@ -401,6 +404,33 @@ function ThemeSection({ t, setT, readOnly }: SectionProps) {
         <ColorField key={`p-${t.theme.templateId}`} id="th-primary" label={t.theme.templateId === "noche" ? "Color de fondo" : "Color principal"} value={t.theme.primaryColor} onChange={(v) => set({ primaryColor: v })} />
         <ColorField key={`a-${t.theme.templateId}`} id="th-accent" label={t.theme.templateId === "noche" ? "Color de botones" : "Color de precios"} value={t.theme.accentColor} onChange={(v) => set({ accentColor: v })} />
       </div>
+      <div>
+        <p className="label">Estilo de la carta</p>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4" role="radiogroup" aria-label="Estilo de la carta">
+          {MENU_STYLES.map((m) => {
+            const on = (t.theme.menuStyle ?? "lista") === m.id;
+            return (
+              <button
+                key={m.id}
+                type="button"
+                role="radio"
+                aria-checked={on}
+                onClick={() => {
+                  set({ menuStyle: m.id });
+                  onMenuStyle();
+                }}
+                className={`overflow-hidden rounded-lg border-2 text-left transition-colors ${on ? "border-ink" : "border-line hover:border-line-2"}`}
+              >
+                <MenuStyleThumb style={m.id} r={resolveTheme(t.theme)} />
+                <div className="border-t border-line bg-surface px-3 py-2">
+                  <p className="text-[15px] font-medium">{m.name}</p>
+                  <p className="text-[13px] leading-snug text-ink-2">{m.description}</p>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
     </Section>
   );
 }
@@ -433,6 +463,53 @@ function ColorField({ id, label, value, onChange }: { id: string; label: string;
           }}
         />
       </div>
+    </div>
+  );
+}
+
+/** Dibujo esquemático de cada estilo de carta, con los colores de la plantilla elegida. */
+function MenuStyleThumb({ style, r }: { style: MenuStyle; r: ResolvedTheme }) {
+  const bar = (w: string, o = 1) => <span className="block h-1.5 rounded-full" style={{ width: w, background: r.text, opacity: o }} />;
+  const price = <span className="block h-1.5 w-5 shrink-0 rounded-full" style={{ background: r.accent }} />;
+  const photo = (cls: string) => <span className={`block shrink-0 ${cls}`} style={{ background: r.text, opacity: 0.14, borderRadius: 4 }} />;
+  return (
+    <div className="flex h-24 flex-col justify-center gap-2 px-3" style={{ background: r.bg }} aria-hidden>
+      {style === "lista" &&
+        [0, 1, 2].map((i) => (
+          <div key={i} className="flex items-center gap-2">
+            <div className="flex-1 space-y-1">
+              <div className="flex justify-between gap-2">{bar("55%")}{price}</div>
+              {bar("70%", 0.35)}
+            </div>
+            {photo("h-5 w-5")}
+          </div>
+        ))}
+      {style === "clasica" &&
+        [0, 1, 2].map((i) => (
+          <div key={i} className="flex items-center gap-1.5">
+            {bar(i === 1 ? "38%" : "30%")}
+            <span className="flex-1 border-b-2 border-dotted" style={{ borderColor: r.text, opacity: 0.3 }} />
+            {price}
+          </div>
+        ))}
+      {style === "cuadricula" && (
+        <div className="grid grid-cols-3 gap-2">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="space-y-1">
+              {photo("aspect-square w-full")}
+              {bar("80%")}
+              {price}
+            </div>
+          ))}
+        </div>
+      )}
+      {style === "destacada" && (
+        <div className="space-y-1.5">
+          {photo("h-10 w-full")}
+          <div className="flex justify-between gap-2">{bar("50%")}{price}</div>
+          {bar("75%", 0.35)}
+        </div>
+      )}
     </div>
   );
 }

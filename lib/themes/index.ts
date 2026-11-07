@@ -1,5 +1,5 @@
 import { contrast, isHex, readableOn } from "@/lib/domain/contrast";
-import type { TemplateId, TenantTheme } from "@/lib/domain/types";
+import type { MenuStyle, TemplateId, TenantTheme } from "@/lib/domain/types";
 
 export interface TemplateDef {
   id: TemplateId;
@@ -146,3 +146,17 @@ export function themeIssues(theme: TenantTheme): string[] {
   }
   return issues;
 }
+
+export interface MenuStyleDef {
+  id: MenuStyle;
+  name: string;
+  description: string;
+}
+
+/** Estilos de carta: se combinan con cualquier plantilla y color. */
+export const MENU_STYLES: MenuStyleDef[] = [
+  { id: "lista", name: "Lista", description: "Renglones con foto pequeña a la derecha. Va con todo." },
+  { id: "clasica", name: "Clásica", description: "Como carta impresa: nombre, puntos y precio. Para cantinas y fondas." },
+  { id: "cuadricula", name: "Cuadrícula", description: "Fotos en dos columnas. Para cafés, postres y antojitos." },
+  { id: "destacada", name: "Destacada", description: "Foto grande en los platillos que la tienen. Para brunch y cocina de autor." },
+];

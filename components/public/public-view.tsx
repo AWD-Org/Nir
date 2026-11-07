@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties }
 import { BUTTON_LABELS, SOCIAL_LABELS, TAGS } from "@/lib/domain/constants";
 import { formatPrice } from "@/lib/domain/money";
 import { socialHref } from "@/lib/domain/publish";
-import type { ButtonKey, PublicItem, PublicPage, SocialKey } from "@/lib/domain/types";
+import type { ButtonKey, MenuStyle, PublicCategory, PublicItem, PublicPage, SocialKey } from "@/lib/domain/types";
 import { resolveTheme } from "@/lib/themes";
 import { SocialIcon } from "./social-icons";
 
@@ -25,12 +25,17 @@ interface Props {
   forceView?: View;
   /** Botón resaltado (por ejemplo, el de reseñas en la historia de la landing). */
   highlight?: ButtonKey;
+  /** Solo vistas previas: abre una sección cada vez que cambia `n` (el comensal puede seguir navegando). */
+  open?: { view: View; n: number };
 }
 
-export function PublicView({ page, mode = "live", resolveImage, forceView, highlight }: Props) {
+export function PublicView({ page, mode = "live", resolveImage, forceView, highlight, open }: Props) {
   const theme = useMemo(() => resolveTheme(page.theme), [page.theme]);
   const [ownView, setView] = useState<View>("home");
   const view = mode === "preview" && forceView ? forceView : ownView;
+  useEffect(() => {
+    if (open && mode === "preview") setView(open.view);
+  }, [open?.n]); // eslint-disable-line react-hooks/exhaustive-deps
   const lastForced = useRef(forceView);
   if (forceView !== lastForced.current) {
     lastForced.current = forceView;
@@ -391,19 +396,212 @@ function MenuSection({
       <main className="flex-1 px-4 pb-16">
         {cats.length === 0 && <p className="px-2 py-10 text-[16px] text-[var(--muted)]">La carta se está preparando.</p>}
         {cats.map((c) => (
-          <section key={c.id} id={`cat-${c.id}`} className="pt-6">
-            <h2 className={`px-2 text-[22px] ${displayClass}`} style={{ fontFamily: "var(--display)", fontWeight: displayClass ? 800 : 400 }}>
-              {c.name}
-            </h2>
-            <ul className="mt-2">
-              {c.items.map((i, n) => (
-                <ItemRow key={i.id} item={i} img={img} index={n} />
-              ))}
-            </ul>
-          </section>
+          <CategoryBlock key={c.id} cat={c} style={page.theme.menuStyle ?? "lista"} displayClass={displayClass} img={img} />
         ))}
       </main>
     </>
+  );
+}
+
+type Img = (id: string, s: "thumb" | "full") => string;
+
+const displayStyle = (displayClass: string): CSSProperties => ({ fontFamily: "var(--display)", fontWeight: displayClass ? 800 : 400 });
+/** Las fotos no heredan el radio de píldora de algunas plantillas. */
+const PHOTO_RADIUS = "min(var(--radius), 18px)";
+const priceColor = (off: boolean) => ({ color: off ? "var(--muted)" : "var(--accent)" });
+const fromPrice = (i: PublicItem) => (i.variants.length ? Math.min(...i.variants.map((v) => v.priceCents)) : i.priceCents);
+
+function CategoryBlock({ cat, style, displayClass, img }: { cat: PublicCategory; style: MenuStyle; displayClass: string; img: Img }) {
+  if (style === "clasica") {
+    return (
+      <section id={`cat-${cat.id}`} className="pt-9">
+        <h2 className={`flex items-center gap-4 px-2 text-center text-[22px] ${displayClass}`} style={displayStyle(displayClass)}>
+          <span className="h-px flex-1" style={{ background: "var(--line)" }} />
+          {cat.name}
+          <span className="h-px flex-1" style={{ background: "var(--line)" }} />
+        </h2>
+        <ul className="mt-5 space-y-5 px-2">
+          {cat.items.map((i, n) => (
+            <ClassicItem key={i.id} item={i} index={n} />
+          ))}
+        </ul>
+      </section>
+    );
+  }
+  if (style === "cuadricula") {
+    return (
+      <section id={`cat-${cat.id}`} className="pt-7">
+        <h2 className={`px-1 text-[22px] ${displayClass}`} style={displayStyle(displayClass)}>
+          {cat.name}
+        </h2>
+        <ul className="mt-3 grid grid-cols-2 gap-x-3 gap-y-5">
+          {cat.items.map((i, n) => (
+            <GridItem key={i.id} item={i} index={n} img={img} displayClass={displayClass} />
+          ))}
+        </ul>
+      </section>
+    );
+  }
+  if (style === "destacada") {
+    return (
+      <section id={`cat-${cat.id}`} className="pt-8">
+        <h2 className={`px-2 text-[26px] leading-tight ${displayClass}`} style={displayStyle(displayClass)}>
+          {cat.name}
+        </h2>
+        <ul className="mt-3">
+          {cat.items.map((i, n) =>
+            i.imageId ? <FeatureItem key={i.id} item={i} index={n} img={img} displayClass={displayClass} /> : <ItemRow key={i.id} item={i} img={img} index={n} />,
+          )}
+        </ul>
+      </section>
+    );
+  }
+  return (
+    <section id={`cat-${cat.id}`} className="pt-6">
+      <h2 className={`px-2 text-[22px] ${displayClass}`} style={displayStyle(displayClass)}>
+        {cat.name}
+      </h2>
+      <ul className="mt-2">
+        {cat.items.map((i, n) => (
+          <ItemRow key={i.id} item={i} img={img} index={n} />
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+function Badges({ item }: { item: PublicItem }) {
+  const off = !item.available;
+  if (!item.tags.length && !off) return null;
+  return (
+    <div className="mt-2 flex flex-wrap gap-1.5">
+      {off && (
+        <span className="border px-2 py-0.5 text-[13px] font-semibold" style={{ borderRadius: "var(--radius)", borderColor: "var(--text)" }}>
+          Agotado
+        </span>
+      )}
+      {item.tags.map((t) => (
+        <span key={t} className="px-2 py-0.5 text-[13px]" style={{ background: "var(--surface)", borderRadius: "var(--radius)" }}>
+          {TAG_LABEL[t] ?? t}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+/** Carta impresa: nombre, línea punteada y precio; las variantes van en su propio renglón. */
+function ClassicItem({ item, index }: { item: PublicItem; index: number }) {
+  const off = !item.available;
+  const leader = <span className="mb-[0.45em] min-w-6 flex-1 border-b-2 border-dotted" style={{ borderColor: "var(--line)" }} aria-hidden />;
+  return (
+    <li className="anim-rise" style={{ opacity: off ? 0.6 : 1, "--i": Math.min(index, 8) } as CSSProperties}>
+      {/* items-end: si el nombre ocupa dos renglones, los puntos y el precio van con el último */}
+      <div className="flex items-end gap-2">
+        <h3 className={`text-[17px] font-semibold leading-snug ${off ? "line-through decoration-1" : ""}`}>{item.name}</h3>
+        {item.variants.length === 0 ? (
+          <>
+            {leader}
+            <span className="shrink-0 text-[17px] font-semibold tabular-nums" style={priceColor(off)}>
+              {formatPrice(item.priceCents)}
+            </span>
+          </>
+        ) : (
+          off && <span className="text-[13px] font-semibold uppercase tracking-wide text-[var(--muted)]">Agotado</span>
+        )}
+      </div>
+      {item.variants.length === 0 && off && <p className="text-[13px] font-semibold uppercase tracking-wide text-[var(--muted)]">Agotado</p>}
+      {item.description && <p className="mt-0.5 text-[15px] italic leading-relaxed text-[var(--muted)]">{item.description}</p>}
+      {item.variants.length > 0 && (
+        <ul className="mt-1.5 space-y-1 pl-3">
+          {item.variants.map((v) => (
+            <li key={v.name} className="flex items-baseline gap-2 text-[15px]">
+              <span className="text-[var(--muted)]">{v.name}</span>
+              {leader}
+              <span className="shrink-0 font-semibold tabular-nums" style={priceColor(off)}>
+                {formatPrice(v.priceCents)}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+      {item.tags.length > 0 && <p className="mt-1 text-[13px] text-[var(--muted)]">{item.tags.map((t) => TAG_LABEL[t] ?? t).join(" · ")}</p>}
+    </li>
+  );
+}
+
+/** Mosaico sin foto: la inicial del platillo, para que la cuadrícula no tenga huecos. */
+function PhotoOrInitial({ item, img, size, className, displayClass }: { item: PublicItem; img: Img; size: "thumb" | "full"; className: string; displayClass: string }) {
+  const off = !item.available;
+  return (
+    <div className={`relative overflow-hidden ${className}`} style={{ borderRadius: PHOTO_RADIUS, background: "var(--surface)" }}>
+      {item.imageId ? (
+        <img
+          src={img(item.imageId, size)}
+          alt={item.name}
+          loading="lazy"
+          decoding="async"
+          className="h-full w-full object-cover"
+          style={{ filter: off ? "grayscale(1)" : undefined }}
+        />
+      ) : (
+        <span className={`flex h-full w-full items-center justify-center text-[44px] opacity-40 ${displayClass}`} style={displayStyle(displayClass)} aria-hidden>
+          {item.name.trim().charAt(0)}
+        </span>
+      )}
+      {off && (
+        <span className="absolute left-2 top-2 px-2 py-0.5 text-[12px] font-semibold" style={{ background: "var(--bg)", color: "var(--text)", borderRadius: "var(--radius)" }}>
+          Agotado
+        </span>
+      )}
+    </div>
+  );
+}
+
+function GridItem({ item, index, img, displayClass }: { item: PublicItem; index: number; img: Img; displayClass: string }) {
+  const off = !item.available;
+  return (
+    <li className="anim-rise flex min-w-0 flex-col" style={{ opacity: off ? 0.65 : 1, "--i": Math.min(index, 8) } as CSSProperties}>
+      <PhotoOrInitial item={item} img={img} size="thumb" className="aspect-square w-full" displayClass={displayClass} />
+      <h3 className="mt-2 line-clamp-2 text-[15px] font-semibold leading-snug">{item.name}</h3>
+      {item.description && <p className="mt-0.5 line-clamp-2 text-[13px] leading-snug text-[var(--muted)]">{item.description}</p>}
+      <p className="mt-1 text-[15px] font-semibold tabular-nums" style={priceColor(off)}>
+        {item.variants.length > 0 && <span className="font-normal text-[var(--muted)]">desde </span>}
+        {formatPrice(fromPrice(item))}
+      </p>
+    </li>
+  );
+}
+
+function FeatureItem({ item, index, img, displayClass }: { item: PublicItem; index: number; img: Img; displayClass: string }) {
+  const off = !item.available;
+  return (
+    <li className="anim-rise border-b px-2 py-5" style={{ borderColor: "var(--line)", opacity: off ? 0.65 : 1, "--i": Math.min(index, 8) } as CSSProperties}>
+      <PhotoOrInitial item={item} img={img} size="full" className="aspect-[4/3] w-full" displayClass={displayClass} />
+      <div className="mt-3 flex items-baseline justify-between gap-3">
+        <h3 className={`text-[22px] leading-tight ${displayClass}`} style={displayStyle(displayClass)}>
+          {item.name}
+        </h3>
+        {item.variants.length === 0 && (
+          <span className="shrink-0 text-[18px] font-semibold tabular-nums" style={priceColor(off)}>
+            {formatPrice(item.priceCents)}
+          </span>
+        )}
+      </div>
+      {item.description && <p className="mt-1 text-[15px] leading-relaxed text-[var(--muted)]">{item.description}</p>}
+      {item.variants.length > 0 && (
+        <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[15px]">
+          {item.variants.map((v) => (
+            <li key={v.name}>
+              <span className="text-[var(--muted)]">{v.name}</span>{" "}
+              <span className="font-semibold tabular-nums" style={priceColor(off)}>
+                {formatPrice(v.priceCents)}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+      <Badges item={item} />
+    </li>
   );
 }
 

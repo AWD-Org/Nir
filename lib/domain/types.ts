@@ -6,6 +6,8 @@ export type TenantStatus = "preview" | "active" | "due" | "grace" | "suspended" 
 export type ButtonKey = "menu" | "reviews" | "social" | "wifi";
 export type SocialKey = "instagram" | "facebook" | "tiktok" | "whatsapp";
 export type TemplateId = "noche" | "mercado" | "claro";
+/** Cómo se acomodan los productos en la carta (independiente de la plantilla de colores). */
+export type MenuStyle = "lista" | "clasica" | "cuadricula" | "destacada";
 export type CardStatus = "produced" | "delivered" | "disabled";
 export type PaymentConcept = "setup" | "monthly" | "annual" | "cards";
 export type PaymentMethod = "transfer" | "stripe_link";
@@ -54,6 +56,8 @@ export interface TenantTheme {
   templateId: TemplateId;
   primaryColor: string;
   accentColor: string;
+  /** Opcional: las cuentas creadas antes de los estilos usan "lista". */
+  menuStyle?: MenuStyle;
 }
 
 export interface TableConfig {

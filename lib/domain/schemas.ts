@@ -39,6 +39,7 @@ export const themeSchema = z.object({
   templateId: z.enum(["noche", "mercado", "claro"]),
   primaryColor: hex,
   accentColor: hex,
+  menuStyle: z.enum(["lista", "clasica", "cuadricula", "destacada"]).optional(),
 });
 
 export const variantSchema = z.object({

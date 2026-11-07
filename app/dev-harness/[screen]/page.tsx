@@ -11,6 +11,9 @@ import { emptyBilling } from "@/lib/domain/billing";
 import { DEFAULT_BUTTONS } from "@/lib/domain/constants";
 import type { MenuDraft, Tenant, TemplateId } from "@/lib/domain/types";
 import { demoPage } from "@/lib/demo";
+import { DemoPhotosView } from "@/components/dev/demo-photos-view";
+import { Phone } from "@/components/ui/phone";
+import { MENU_STYLES } from "@/lib/themes";
 
 // Arnés visual para revisar pantallas sin Firebase. Solo existe con NIR_DEV_HARNESS=1.
 export const dynamic = "force-dynamic";
@@ -51,6 +54,34 @@ export default async function Harness({ params }: { params: Promise<{ screen: st
       items: Array.from({ length: 12 }, (_, i) => ({ id: `c${c}i${i}`, name: `Producto ${c + 1}.${i + 1}`, description: "Descripción de ejemplo para medir el largo de la carta.", priceCents: 9900, variants: [], tags: [], imageId: null, available: true })),
     }));
     return <PublicView page={{ ...base, menu: { categories } }} mode="live" />;
+  }
+  if (screen.startsWith("estilos-")) {
+    const tpl = screen.replace("estilos-", "") as TemplateId;
+    const base = demoPage(tpl);
+    const photos: Record<string, string> = { i1: "guac", i2: "queso", i3: "tinga", i4: "mezcal", i6: "jamaica" };
+    const categories = [
+      ...base.menu.categories.map((c) => ({ ...c, items: c.items.map((i) => ({ ...i, imageId: photos[i.id] ?? null })) })),
+      {
+        id: "postres",
+        name: "Postres",
+        items: [
+          { id: "p1", name: "Pan de elote", description: "Con cajeta y nuez.", priceCents: 7500, variants: [], tags: ["vegetariano"], imageId: "pan", available: true },
+          { id: "p2", name: "Flan napolitano", description: "", priceCents: 6500, variants: [], tags: [], imageId: null, available: true },
+        ],
+      },
+    ];
+    return (
+      <div className="flex flex-wrap gap-6 bg-[#E9E7E2] p-6">
+        {MENU_STYLES.map((m) => (
+          <div key={m.id}>
+            <p className="mb-2 text-center text-sm font-medium">{m.name}</p>
+            <Phone>
+              <DemoPhotosView page={{ ...base, theme: { ...base.theme, menuStyle: m.id }, menu: { categories } }} />
+            </Phone>
+          </div>
+        ))}
+      </div>
+    );
   }
   if (screen.startsWith("publico-")) return <PublicView page={demoPage(screen.replace("publico-", "") as TemplateId)} mode="preview" />;
   const shell = (c: React.ReactNode) => (
