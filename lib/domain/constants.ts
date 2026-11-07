@@ -2,7 +2,7 @@ import type { ButtonConfig, ButtonKey, SocialKey, TenantStatus } from "./types";
 
 export const LIMITS = {
   items: 300,
-  /** Recomendados de la casa (etiqueta discreta junto al nombre). */
+  /** Recomendados de la casa (estrella junto al nombre). */
   featured: 8,
   categories: 30,
   tables: 100,

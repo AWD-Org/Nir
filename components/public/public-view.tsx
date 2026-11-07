@@ -435,18 +435,22 @@ const tap = (onOpen: () => void) => ({
   },
 });
 
-/** Nombre del producto (el "recomendado" va como insignia junto a las etiquetas, no en el nombre). */
+/** Nombre del producto; si es recomendado de la casa, una estrella pequeña al final,
+ *  pegada a la última palabra para que nunca quede sola en un renglón. */
 function Name({ item }: { item: PublicItem }) {
-  return <>{item.name}</>;
-}
-
-/** Insignia "Recomendado": mismo tamaño y forma que las etiquetas, en el color de precios. */
-function RecoBadge() {
+  if (!item.featured) return <>{item.name}</>;
+  const words = item.name.split(" ");
+  const last = words.pop();
   return (
-    <span className="inline-flex items-center border px-2 py-0.5 text-[13px] font-semibold" style={{ borderRadius: "var(--radius)", borderColor: "var(--accent)", color: "var(--accent)" }}>
-      <FavStar />
-      Recomendado
-    </span>
+    <>
+      {words.length > 0 && `${words.join(" ")} `}
+      <span className="whitespace-nowrap">
+        {last}
+        <span role="img" aria-label="Recomendado de la casa" title="Recomendado de la casa">
+          <FavStar className="-mt-[0.2em] ml-1.5 inline-block h-[0.8em] w-[0.8em] align-middle" />
+        </span>
+      </span>
+    </>
   );
 }
 
@@ -596,10 +600,9 @@ function CategoryBlock({ cat, style, displayClass, img, onOpen }: { cat: PublicC
 
 function Badges({ item }: { item: PublicItem }) {
   const off = !item.available;
-  if (!item.tags.length && !off && !item.featured) return null;
+  if (!item.tags.length && !off) return null;
   return (
     <div className="mt-2 flex flex-wrap gap-1.5">
-      {item.featured && <RecoBadge />}
       {off && (
         <span className="border px-2 py-0.5 text-[13px] font-semibold" style={{ borderRadius: "var(--radius)", borderColor: "var(--text)" }}>
           Agotado
@@ -651,18 +654,7 @@ function ClassicItem({ item, index, onOpen }: { item: PublicItem; index: number;
           ))}
         </ul>
       )}
-      {(item.tags.length > 0 || item.featured) && (
-        <p className="mt-1 flex flex-wrap items-center gap-x-2 text-[13px] text-[var(--muted)]">
-          {item.featured && (
-            <span className="inline-flex items-center font-semibold" style={{ color: "var(--accent)" }}>
-              <FavStar />
-              Recomendado
-            </span>
-          )}
-          {item.featured && item.tags.length > 0 && <span aria-hidden>·</span>}
-          {item.tags.length > 0 && <span>{item.tags.map((t) => TAG_LABEL[t] ?? t).join(" · ")}</span>}
-        </p>
-      )}
+      {item.tags.length > 0 && <p className="mt-1 text-[13px] text-[var(--muted)]">{item.tags.map((t) => TAG_LABEL[t] ?? t).join(" · ")}</p>}
     </li>
   );
 }
@@ -697,16 +689,6 @@ function PhotoOrInitial({ item, img, size, className }: { item: PublicItem; img:
           Agotado
         </span>
       )}
-      {item.featured && (
-        <span
-          className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full"
-          style={{ background: "var(--bg)" }}
-          role="img"
-          aria-label="Recomendado de la casa"
-        >
-          <FavStar className="h-4 w-4" />
-        </span>
-      )}
     </div>
   );
 }
@@ -725,16 +707,11 @@ function GridItem({ item, index, img, displayClass, textOnly, onOpen }: { item: 
           <Name item={item} />
         </h3>
         {item.description && <p className="mt-1 line-clamp-2 text-[13px] leading-snug text-[var(--muted)]">{item.description}</p>}
-        <p className="mt-auto flex items-center justify-between gap-2 pt-2 text-[15px] font-semibold tabular-nums" style={priceColor(off)}>
+        <p className="mt-auto pt-2 text-[15px] font-semibold tabular-nums" style={priceColor(off)}>
           {off ? <span className="text-[13px] uppercase tracking-wide">Agotado</span> : (
             <span>
               {item.variants.length > 0 && <span className="font-normal text-[var(--muted)]">desde </span>}
               {formatPrice(fromPrice(item))}
-            </span>
-          )}
-          {item.featured && (
-            <span role="img" aria-label="Recomendado de la casa">
-              <FavStar className="h-4 w-4" />
             </span>
           )}
         </p>
@@ -784,9 +761,8 @@ function ItemRow({ item, img, index, onOpen }: { item: PublicItem; img: Img; ind
             ))}
           </ul>
         )}
-        {(item.tags.length > 0 || off || item.featured) && (
+        {(item.tags.length > 0 || off) && (
           <div className="mt-2 flex flex-wrap gap-1.5">
-            {item.featured && <RecoBadge />}
             {off && (
               <span className="border px-2 py-0.5 text-[13px] font-semibold" style={{ borderRadius: "var(--radius)", borderColor: "var(--text)" }}>
                 Agotado

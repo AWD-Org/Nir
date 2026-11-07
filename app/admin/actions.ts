@@ -371,7 +371,7 @@ export async function setAvailable(id: string, available: boolean) {
 
 const countFeatured = (items: Record<string, MenuItem>) => Object.values(items).filter((i) => i.featured).length;
 
-/** Recomendado de la casa: etiqueta discreta junto al nombre. Se publica al instante. */
+/** Recomendado de la casa: estrella junto al nombre. Se publica al instante. */
 export async function setFeatured(id: string, featured: boolean) {
   return run(async () => {
     const ctx = await ownerForAction();

@@ -21,7 +21,7 @@ Primera línea con los encabezados. Separador coma (también acepta punto y coma
 | `variantes` | No | `Copa:90\|Botella:1200` | `Nombre:precio` separados por `\|`; el precio del producto es el de la primera |
 | `etiquetas` | No | `picante\|vegetariano` | `picante`, `vegetariano`, `vegano`, `sin-gluten`, `nuevo` |
 | `disponible` | No | `si` | `no` lo muestra como agotado; vacío = `si` |
-| `favorito` | No | `si` | Recomendado de la casa: lleva una etiqueta discreta junto al nombre (máximo 8); vacío = `no` |
+| `favorito` | No | `si` | Recomendado de la casa: lleva una estrella junto al nombre (máximo 8); vacío = `no` |
 
 ```csv
 categoria,producto,descripcion,precio,variantes,etiquetas,disponible,favorito

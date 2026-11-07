@@ -723,7 +723,7 @@ function ItemSheet({
             <div className="flex items-center justify-between rounded-lg border border-line p-3">
               <div>
                 <p className="font-medium">Recomendado de la casa</p>
-                <p className="text-sm text-ink-2">Lleva una etiqueta discreta de "Recomendado" junto a su nombre. Hasta {LIMITS.featured}.</p>
+                <p className="text-sm text-ink-2">Lleva una estrella junto a su nombre. Hasta {LIMITS.featured}.</p>
               </div>
               <Switch checked={form.featured} onCheckedChange={(v) => set("featured", v)} label="Recomendado de la casa" />
             </div>
