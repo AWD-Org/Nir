@@ -112,18 +112,24 @@ export function MenuEditor({ tenant, initial, readOnly }: { tenant: Tenant; init
               <span className="num">{count}</span> de <span className="num">{LIMITS.items}</span> productos · los cambios se publican al guardar
             </p>
           </div>
-          <div className="flex gap-2">
-            <button className="btn-secondary lg:hidden" onClick={() => setShowPreview(true)}>
-              <Smartphone className="h-4 w-4" /> Ver como comensal
+          {/* En celular: tres botones iguales con el ícono arriba y texto corto; en pantallas grandes, en fila. */}
+          <div className="grid w-full auto-cols-fr grid-flow-col gap-2 sm:flex sm:w-auto">
+            <button className="btn-secondary flex-col gap-1 px-2 py-2 text-[13px] leading-tight sm:flex-row sm:gap-2 sm:px-4 sm:text-[15px] lg:hidden" onClick={() => setShowPreview(true)}>
+              <Smartphone className="h-5 w-5 sm:h-4 sm:w-4" />
+              <span className="sm:hidden">Vista previa</span>
+              <span className="hidden sm:inline">Ver como comensal</span>
             </button>
             {!readOnly && (
-              <button className="btn-secondary" onClick={() => setShowImport(true)}>
-                <FileUp className="h-4 w-4" /> Cargar desde archivo
+              <button className="btn-secondary flex-col gap-1 px-2 py-2 text-[13px] leading-tight sm:flex-row sm:gap-2 sm:px-4 sm:text-[15px]" onClick={() => setShowImport(true)}>
+                <FileUp className="h-5 w-5 sm:h-4 sm:w-4" />
+                <span className="sm:hidden">Cargar archivo</span>
+                <span className="hidden sm:inline">Cargar desde archivo</span>
               </button>
             )}
             {!readOnly && cats.length > 0 && (
-              <button className="btn-secondary" onClick={() => setCatDialog({ id: null, name: "", visible: true })}>
-                <Plus className="h-4 w-4" /> Categoría
+              <button className="btn-secondary flex-col gap-1 px-2 py-2 text-[13px] leading-tight sm:flex-row sm:gap-2 sm:px-4 sm:text-[15px]" onClick={() => setCatDialog({ id: null, name: "", visible: true })}>
+                <Plus className="h-5 w-5 sm:h-4 sm:w-4" />
+                Categoría
               </button>
             )}
           </div>
@@ -436,7 +442,7 @@ function ItemRow({
           <span className="hidden h-11 w-11 shrink-0 rounded-md bg-paper sm:block" aria-hidden />
         )}
         <span className="min-w-0">
-          <span className={`block truncate text-[15px] font-medium ${item.available ? "" : "text-ink-3 line-through"}`}>{item.name}</span>
+          <span className={`line-clamp-2 block text-[15px] font-medium leading-snug sm:truncate ${item.available ? "" : "text-ink-3 line-through"}`}>{item.name}</span>
           <span className="block truncate text-sm text-ink-2">
             {!item.available ? "Agotado" : item.variants.length ? item.variants.map((v) => `${v.name} ${formatPrice(v.priceCents)}`).join(" · ") : item.description || "Sin descripción"}
           </span>
@@ -454,7 +460,7 @@ function ItemRow({
         aria-pressed={!!item.featured}
         aria-label={item.featured ? `Quitar ${item.name} de recomendados de la casa` : `Marcar ${item.name} como recomendado de la casa`}
         title={item.featured ? "Recomendado de la casa" : "Marcar como recomendado de la casa"}
-        className={`flex h-10 w-9 shrink-0 items-center justify-center rounded-md transition-colors disabled:opacity-50 ${item.featured ? "text-[#D99A06]" : "text-ink-3 hover:text-ink"}`}
+        className={`flex h-10 w-8 shrink-0 items-center justify-center rounded-md transition-colors disabled:opacity-50 ${item.featured ? "text-[#D99A06]" : "text-ink-3 hover:text-ink"}`}
       >
         <Star className={`h-[18px] w-[18px] ${item.featured ? "anim-pop fill-current" : ""}`} />
       </button>
@@ -491,7 +497,7 @@ function PriceInput({ cents, disabled, name, onSave }: { cents: number; disabled
   }
 
   return (
-    <div className="relative w-[88px] shrink-0 sm:w-24">
+    <div className="relative w-[76px] shrink-0 sm:w-24">
       <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-ink-3">$</span>
       <input
         inputMode="decimal"
