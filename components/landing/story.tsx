@@ -3,7 +3,6 @@
 import {
   AnimatePresence,
   motion,
-  useMotionTemplate,
   useMotionValueEvent,
   useReducedMotion,
   useScroll,
@@ -65,9 +64,9 @@ export function Story({ kitUrl }: { kitUrl: string }) {
   const ownerRotate = useTransform(p, [0.5, 0.6], [-14, -6]);
   // Mesa: la escena se aleja un poco cuando llega el celular.
   const tableScale = useTransform(p, [0, 0.2, 1], [1.08, 1, 0.94]);
-  const lampX = useTransform(p, [0, 1], [38, 62]);
-  const lampY = useTransform(p, [0, 1], [30, 46]);
-  const lamp = useMotionTemplate`radial-gradient(1200px 800px at ${lampX}% ${lampY}%, rgba(255,214,170,0.13), transparent 60%)`;
+  // La luz se mueve con transform (no se vuelve a pintar el degradado en cada cuadro).
+  const lampX = useTransform(p, [0, 1], ["-12%", "12%"]);
+  const lampY = useTransform(p, [0, 1], ["-6%", "8%"]);
   const progressH = useTransform(scrollYProgress, [0, 1], ["0%", "100%"]);
 
   const page = useMemo(() => {
@@ -84,12 +83,15 @@ export function Story({ kitUrl }: { kitUrl: string }) {
 
   return (
     <section ref={ref} className="relative h-[560vh]" aria-label="Cómo funciona Nir en la mesa">
-      <div className="sticky top-0 h-dvh overflow-hidden">
+      <div className="sticky top-0 h-svh overflow-hidden">
         {/* Mesa vista desde arriba */}
-        <motion.div className="absolute inset-0" style={{ scale: reduce ? 1 : tableScale }} aria-hidden>
+        <motion.div className="absolute inset-0 will-change-transform" style={{ scale: reduce ? 1 : tableScale }} aria-hidden>
           <div className="absolute inset-0 bg-[#121113]" />
           <div className="absolute inset-0 opacity-[0.35] [background:repeating-linear-gradient(97deg,transparent_0_38px,rgba(255,255,255,0.025)_38px_40px,transparent_40px_90px)]" />
-          <motion.div className="absolute inset-0" style={{ background: lamp }} />
+          <motion.div
+            className="absolute inset-0 will-change-transform"
+            style={{ x: lampX, y: lampY, background: "radial-gradient(45% 40% at 45% 40%, rgba(255,214,170,0.13), transparent 70%)" }}
+          />
           <TableObjects />
         </motion.div>
 
@@ -163,14 +165,14 @@ export function Story({ kitUrl }: { kitUrl: string }) {
               </div>
 
               {/* Celular del dueño */}
-              <motion.div className="absolute inset-0 z-10" style={{ x: ownerX, rotate: ownerRotate, opacity: ownerOpacity }}>
+              <motion.div className="absolute inset-0 z-10 will-change-transform" style={{ x: ownerX, rotate: ownerRotate, opacity: ownerOpacity }}>
                 <Phone className="shadow-[0_40px_90px_-30px_rgba(0,0,0,0.9)]">
                   <OwnerScreen soldOut={soldOut} />
                 </Phone>
               </motion.div>
 
               {/* Celular del comensal */}
-              <motion.div className="absolute inset-0 z-20" style={{ y: dinerY, rotate: dinerRotate, x: dinerX }}>
+              <motion.div className="absolute inset-0 z-20 will-change-transform" style={{ y: dinerY, rotate: dinerRotate, x: dinerX }}>
                 <Phone className="shadow-[0_50px_100px_-30px_rgba(0,0,0,0.95)]">
                   <PublicView page={page} mode="preview" forceView={view} highlight={step === 4 ? "reviews" : undefined} />
                   <AnimatePresence>

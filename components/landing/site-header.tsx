@@ -16,7 +16,7 @@ export function SiteHeader({ kitUrl }: { kitUrl: string }) {
   });
   return (
     <motion.header
-      className={`fixed inset-x-0 top-0 z-50 transition-colors duration-300 ${solid ? "bg-[#0D0D0F]/80 backdrop-blur-md" : ""}`}
+      className={`fixed inset-x-0 top-0 z-50 transition-colors duration-300 ${solid ? "bg-[#0D0D0F]/95 md:bg-[#0D0D0F]/80 md:backdrop-blur-md" : ""}`}
       animate={{ y: hidden ? -80 : 0 }}
       transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
     >

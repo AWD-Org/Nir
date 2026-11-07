@@ -20,10 +20,9 @@ export function ScrollWords({ text, className = "" }: { text: string; className?
 }
 
 function Word({ children, progress, range }: { children: string; progress: MotionValue<number>; range: [number, number] }) {
-  const opacity = useTransform(progress, range, [0.55, 1]);
-  const color = useTransform(progress, range, ["rgba(244,241,234,0.55)", "rgba(244,241,234,1)"]);
+  const opacity = useTransform(progress, range, [0.3, 1]);
   return (
-    <motion.span style={{ opacity, color }} className="inline">
+    <motion.span style={{ opacity }} className="inline">
       {children}{" "}
     </motion.span>
   );

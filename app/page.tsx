@@ -49,7 +49,7 @@ export default function Landing() {
       <div className="relative bg-[#0D0D0F] text-[#F4F1EA] selection:bg-[#FA1F6F] selection:text-[#141416]">
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
         <SmoothScroll />
-        <div className="pointer-events-none fixed inset-0 z-[60]" aria-hidden>
+        <div className="pointer-events-none fixed inset-0 z-[60] hidden md:block" aria-hidden>
           <Grain />
         </div>
         <SiteHeader kitUrl={kit} />
