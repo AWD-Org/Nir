@@ -3,7 +3,7 @@ import "@fontsource-variable/space-grotesk";
 import "@fontsource-variable/jetbrains-mono";
 import "./globals.css";
 
-const site = process.env.NEXT_PUBLIC_SITE_URL || "https://nir.amoxtli.tech";
+const site = process.env.NEXT_PUBLIC_PUBLIC_URL || "https://amoxtli-nir.netlify.app";
 
 export const metadata: Metadata = {
   metadataBase: new URL(site),
