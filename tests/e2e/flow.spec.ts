@@ -125,6 +125,11 @@ test("visita 1 completa y toque de tarjeta", async ({ page }) => {
   await expect(urlCell).toBeVisible();
   const card1 = (await urlCell.textContent())!.replace(/^[^/]+/, "");
   const card2 = (await page.getByRole("cell", { name: new RegExp(`/${SLUG}/2-`) }).textContent())!.replace(/^[^/]+/, "");
+  // Cargar carta desde CSV (agregar a la carta actual)
+  await page.getByLabel("O pega aquí el contenido").fill("categoria,producto,descripcion,precio,variantes\nBebidas,Café de olla,Con piloncillo,35,\nBebidas,Agua fresca,,,Vaso:30|Jarra:90\n");
+  await expect(page.getByText("2 productos en 1 categorías")).toBeVisible();
+  await page.getByRole("button", { name: "Cargar 2 productos" }).click();
+  await expect(page.getByText(/Carta cargada: 2 productos/)).toBeVisible();
   await shot(page, "console-negocio");
 
   // Página pública (RF25–RF28, RF31)
@@ -136,6 +141,7 @@ test("visita 1 completa y toque de tarjeta", async ({ page }) => {
   await expect(page.getByText("Tacos al pastor")).toBeVisible();
   await expect(page.getByText("$25")).toBeVisible();
   await expect(page.getByText("Agotado")).toBeVisible();
+  await expect(page.getByText("Café de olla")).toBeVisible();
   await shot(page, "publica-carta", [390]);
 
   // Toque de tarjeta NFC y QR (RF35, RNF09)

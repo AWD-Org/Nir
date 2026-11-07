@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ExternalLink } from "lucide-react";
 import { AuditTable } from "@/components/console/audit-table";
+import { MenuImport } from "@/components/console/menu-import";
 import { CardsPanel, DeliveryForm, PaymentForm, SlugForm, StatusActions } from "@/components/console/tenant-panels";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { CONCEPT_LABELS } from "@/lib/domain/billing";
@@ -69,6 +70,12 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
           </div>
         </section>
       </div>
+
+      <section className="panel p-5">
+        <h2 className="font-semibold">Cargar carta desde archivo</h2>
+        <p className="mb-4 mt-1 text-[15px] text-ink-2">Pega o sube un CSV con el formato de la plantilla. Antes de cargar ves cómo queda y qué líneas tienen errores.</p>
+        <MenuImport tenantId={id} currentItems={Object.keys(draft.items).length} />
+      </section>
 
       <section className="panel p-5">
         <h2 className="mb-4 font-semibold">Tarjetas</h2>
