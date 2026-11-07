@@ -163,6 +163,7 @@
 [data-sheet][data-state="open"] { animation: sheet-up 0.32s var(--ease-out-soft); }
 @media (min-width: 768px) {
   [data-sheet][data-state="open"] { animation: sheet-left 0.32s var(--ease-out-soft); }
+  [data-sheet="compact"][data-state="open"] { animation: dialog-in 0.22s var(--ease-out-soft); }
 }
 [data-overlay][data-state="open"] { animation: fade 0.2s ease-out; }
 [data-dialog][data-state="open"] { animation: dialog-in 0.22s var(--ease-out-soft); }

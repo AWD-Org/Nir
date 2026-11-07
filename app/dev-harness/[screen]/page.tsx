@@ -53,7 +53,7 @@ export default async function Harness({ params }: { params: Promise<{ screen: st
       name: ["Hamburguesas", "Burritos", "Snacks", "Hot dogs", "Chapatas", "Cervezas", "Cócteles", "Tequila", "Refrescos"][c],
       items: Array.from({ length: 12 }, (_, i) => ({ id: `c${c}i${i}`, name: `Producto ${c + 1}.${i + 1}`, description: "Descripción de ejemplo para medir el largo de la carta.", priceCents: 9900, variants: [], tags: [], imageId: null, available: true })),
     }));
-    return <PublicView page={{ ...base, menu: { categories } }} mode="live" />;
+    return <PublicView page={{ ...base, menu: { categories: categories.map((c, k) => (k === 0 ? { ...c, items: c.items.map((i, n) => ({ ...i, featured: n === 0, available: n !== 2, variants: n === 1 ? [{ name: "Chica", priceCents: 9900 }, { name: "Grande", priceCents: 12900 }] : [] })) } : c)) } }} mode="live" />;
   }
   if (screen.startsWith("estilos-")) {
     // estilos-noche: algunas fotos (como una carta real); estilos-noche-sinfotos: ninguna.

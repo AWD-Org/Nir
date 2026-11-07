@@ -8,6 +8,7 @@ import { socialHref } from "@/lib/domain/publish";
 import type { ButtonKey, MenuStyle, PublicCategory, PublicItem, PublicPage, SocialKey } from "@/lib/domain/types";
 import { resolveTheme } from "@/lib/themes";
 import { SocialIcon } from "./social-icons";
+import { SITE_URL } from "@/lib/domain/links";
 
 export type View = "home" | "menu" | "social" | "wifi";
 const HASH: Record<View, string> = { home: "", menu: "#carta", social: "#redes", wifi: "#wifi" };
@@ -199,7 +200,7 @@ function Home({
           )}
           <p className="mt-6 text-[13px] opacity-80">
             Desarrollado por{" "}
-            <a href="https://nir.amoxtli.tech" className="underline underline-offset-4">
+            <a href={SITE_URL} className="underline underline-offset-4">
               AMOXTLI®
             </a>
           </p>
@@ -313,7 +314,27 @@ function MenuSection({
   const cats = page.menu.categories;
   const [active, setActive] = useState(cats[0]?.id);
   const [detail, setDetail] = useState<PublicItem | null>(null);
-  const closeDetail = useCallback(() => setDetail(null), []);
+  // En la página real, la ficha ocupa un paso del historial: el botón "atrás" del celular la cierra
+  // en lugar de sacar al comensal de la carta.
+  const openDetail = useCallback(
+    (i: PublicItem) => {
+      if (mode === "live" && !history.state?.nirDetail) history.pushState({ nirDetail: true }, "", location.hash || "#carta");
+      setDetail(i);
+    },
+    [mode],
+  );
+  const closeDetail = useCallback(() => {
+    if (mode === "live" && history.state?.nirDetail) history.back();
+    else setDetail(null);
+  }, [mode]);
+  useEffect(() => {
+    if (mode !== "live") return;
+    const onPop = () => {
+      if (!history.state?.nirDetail) setDetail(null);
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, [mode]);
   const mainRef = useRef<HTMLElement>(null);
   const style = page.theme.menuStyle ?? "lista";
   const chipsRef = useRef<HTMLDivElement>(null);
@@ -406,7 +427,7 @@ function MenuSection({
       <main ref={mainRef} className="flex-1 px-4 pb-16">
         {cats.length === 0 && <p className="px-2 py-10 text-[16px] text-[var(--muted)]">La carta se está preparando.</p>}
         {cats.map((c) => (
-          <CategoryBlock key={c.id} cat={c} style={style} displayClass={displayClass} img={img} onOpen={setDetail} />
+          <CategoryBlock key={c.id} cat={c} style={style} displayClass={displayClass} img={img} onOpen={openDetail} />
         ))}
       </main>
       {detail && <ItemDetail item={detail} img={img} displayClass={displayClass} anchor={mainRef} onClose={closeDetail} />}
@@ -471,9 +492,13 @@ function ItemDetail({ item, img, displayClass, anchor, onClose }: { item: Public
   const closeRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
+    // Dentro del teléfono de la vista previa o de una hoja del panel (que bloquea lo de afuera),
+    // la ficha se dibuja ahí mismo; en la página real, sobre toda la pantalla.
     const phone = anchor.current?.closest<HTMLElement>(".phone-screen") ?? null;
-    setHost({ el: phone?.parentElement ?? document.body, inPhone: !!phone });
-    const scroller = phone ?? document.documentElement;
+    const sheet = phone ? null : (anchor.current?.closest<HTMLElement>("[data-sheet]") ?? null);
+    setHost({ el: phone?.parentElement ?? sheet ?? document.body, inPhone: !!(phone || sheet) });
+    const inner = sheet && anchor.current ? scrollParent(anchor.current) : null;
+    const scroller = phone ?? (inner instanceof HTMLElement ? inner : null) ?? document.documentElement;
     const prev = scroller.style.overflow;
     scroller.style.overflow = "hidden";
     const onKey = (e: globalThis.KeyboardEvent) => e.key === "Escape" && onClose();
@@ -514,7 +539,7 @@ function ItemDetail({ item, img, displayClass, anchor, onClose }: { item: Public
             <img src={img(item.imageId, "full")} alt={item.name} className="aspect-[4/3] w-full object-cover" style={{ borderRadius: PHOTO_RADIUS, filter: off ? "grayscale(1)" : undefined }} />
           </div>
         )}
-        <div className="px-5 pb-10 pt-4">
+        <div className="px-5 pb-[max(2.5rem,calc(env(safe-area-inset-bottom)+1.5rem))] pt-4">
           {item.featured && (
             <p className="mb-1 flex items-center text-[13px] font-semibold" style={{ color: "var(--accent)" }}>
               <FavStar />

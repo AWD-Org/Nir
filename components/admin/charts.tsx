@@ -68,7 +68,8 @@ export function Bars({
         {hover !== null && (
           <div
             className="pointer-events-none absolute -top-2 z-10 -translate-x-1/2 -translate-y-full whitespace-nowrap rounded-md bg-ink px-2.5 py-1.5 text-sm text-white shadow"
-            style={{ left: `${((hover + 0.5) / data.length) * 100}%` }}
+            // Sin salirse del panel en las barras de las orillas.
+            style={{ left: `clamp(64px, ${((hover + 0.5) / data.length) * 100}%, calc(100% - 64px))` }}
           >
             {format(data[hover].label)} · <span className="num font-semibold">{data[hover].value}</span>
           </div>

@@ -2,6 +2,7 @@
 
 import QRCode from "qrcode";
 import { useEffect, useState } from "react";
+import { SITE_URL } from "@/lib/domain/links";
 
 /** La tarjeta física de mesa (85.6 × 54 mm): frente con mesa y NFC, reverso con QR. */
 export function NirCard({ side = "front", table = 12, className = "" }: { side?: "front" | "back"; table?: number; className?: string }) {
@@ -36,7 +37,7 @@ function Front({ table }: { table: number }) {
 function Back({ table }: { table: number }) {
   const [svg, setSvg] = useState("");
   useEffect(() => {
-    QRCode.toString(`https://nir.amoxtli.tech/ejemplo/${table}-k7m2?s=qr`, { type: "svg", margin: 0, color: { dark: "#141416", light: "#0000" } }).then(setSvg);
+    QRCode.toString(`${SITE_URL}/ejemplo/${table}-k7m2?s=qr`, { type: "svg", margin: 0, color: { dark: "#141416", light: "#0000" } }).then(setSvg);
   }, [table]);
   return (
     <div className="flex h-full items-center gap-[7%] p-[7%]">

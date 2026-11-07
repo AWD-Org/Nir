@@ -36,10 +36,10 @@ export function SiteHeader({ kitUrl }: { kitUrl: string }) {
           <a href="#preguntas" className="transition-colors hover:text-[#F4F1EA]">Preguntas</a>
         </nav>
         <div className="ml-auto flex items-center gap-2">
-          <Link href="/entrar" className="rounded-full px-4 py-2 text-[15px] text-[#F4F1EA]/80 transition-colors hover:text-[#F4F1EA]">
+          <Link href="/entrar" className="whitespace-nowrap rounded-full px-3 py-2 text-[15px] sm:px-4 text-[#F4F1EA]/80 transition-colors hover:text-[#F4F1EA]">
             Entrar
           </Link>
-          <a href={kitUrl} target="_blank" rel="noopener" className="rounded-full bg-[#F4F1EA] px-4 py-2 text-[15px] font-semibold text-[#141416] transition-transform hover:scale-[1.03]">
+          <a href={kitUrl} target="_blank" rel="noopener" className="whitespace-nowrap rounded-full bg-[#F4F1EA] px-4 py-2 text-[15px] font-semibold text-[#141416] transition-transform hover:scale-[1.03]">
             Pide tu kit
           </a>
         </div>

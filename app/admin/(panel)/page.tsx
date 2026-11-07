@@ -43,9 +43,9 @@ export default async function AdminHome() {
             {checklist.map((c, i) => (
               <li key={c.label} className="anim-rise" style={{ "--i": i + 3 } as React.CSSProperties}>
                 <Link href={c.href} className="flex min-h-12 items-center gap-3 text-[15px]">
-                  {c.done ? <Check className="h-5 w-5 text-ok" /> : <Circle className="h-5 w-5 text-line-2" />}
+                  {c.done ? <Check className="h-5 w-5 shrink-0 text-ok" /> : <Circle className="h-5 w-5 shrink-0 text-line-2" />}
                   <span className={c.done ? "text-ink-2 line-through" : ""}>{c.label}</span>
-                  {!c.done && <ArrowRight className="ml-auto h-4 w-4 text-ink-3" />}
+                  {!c.done && <ArrowRight className="ml-auto h-4 w-4 shrink-0 text-ink-3" />}
                 </Link>
               </li>
             ))}
@@ -90,7 +90,7 @@ function QuickLink({ href, title, body }: { href: string; title: string; body: s
         <p className="font-semibold">{title}</p>
         <p className="mt-0.5 text-[15px] text-ink-2">{body}</p>
       </div>
-      <ArrowRight className="h-5 w-5 text-ink-3 transition-transform group-hover:translate-x-0.5" />
+      <ArrowRight className="h-5 w-5 shrink-0 text-ink-3 transition-transform group-hover:translate-x-0.5" />
     </Link>
   );
 }

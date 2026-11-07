@@ -1,5 +1,6 @@
 import type { PublicPage, TemplateId } from "@/lib/domain/types";
 import { TEMPLATES } from "@/lib/themes";
+import { SITE_URL } from "@/lib/domain/links";
 
 /** Negocio de ejemplo para la landing. Es ficticio y se rotula como ejemplo. */
 export function demoPage(templateId: TemplateId): PublicPage {
@@ -12,7 +13,7 @@ export function demoPage(templateId: TemplateId): PublicPage {
     coverImageId: null,
     theme: { templateId, ...TEMPLATES[templateId].defaults },
     buttons: ["menu", "reviews", "social", "wifi"],
-    reviews: { url: "https://nir.amoxtli.tech/#como-funciona" },
+    reviews: { url: `${SITE_URL}/#como-funciona` },
     social: { instagram: "ejemplo", whatsapp: "5215500000000" },
     wifi: { ssid: "ElEjemplo_Clientes", password: "botana2026" },
     profile: { phone: "", address: "Negocio de ejemplo", hours: "Mar a dom, 13:00 a 01:00" },

@@ -11,6 +11,7 @@ export function Sheet({
   description,
   children,
   footer,
+  compact = false,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
@@ -18,14 +19,20 @@ export function Sheet({
   description?: string;
   children: React.ReactNode;
   footer?: React.ReactNode;
+  /** Formularios cortos: en escritorio se muestra como diálogo centrado, no como panel lateral vacío. */
+  compact?: boolean;
 }) {
   return (
     <D.Root open={open} onOpenChange={onOpenChange}>
       <D.Portal>
         <D.Overlay data-overlay className="fixed inset-0 z-40 bg-ink/40" />
         <D.Content
-          data-sheet
-          className="fixed inset-x-0 bottom-0 z-50 flex max-h-[92dvh] flex-col rounded-t-2xl bg-surface shadow-2xl outline-none md:inset-y-0 md:left-auto md:right-0 md:max-h-none md:w-[480px] md:rounded-none"
+          data-sheet={compact ? "compact" : ""}
+          className={`fixed inset-x-0 bottom-0 z-50 flex max-h-[92dvh] flex-col rounded-t-2xl bg-surface shadow-2xl outline-none ${
+            compact
+              ? "md:inset-0 md:m-auto md:h-fit md:max-h-[85dvh] md:w-[440px] md:rounded-2xl"
+              : "md:inset-y-0 md:left-auto md:right-0 md:max-h-none md:w-[480px] md:rounded-none"
+          }`}
           aria-describedby={description ? undefined : undefined}
         >
           <div className="flex items-start justify-between gap-4 border-b border-line px-5 py-4">

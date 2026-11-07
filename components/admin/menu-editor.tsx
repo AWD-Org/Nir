@@ -773,6 +773,7 @@ function CategorySheet({
     <Sheet
       open
       onOpenChange={(v) => !v && onClose()}
+      compact
       title={value.id ? "Renombrar categoría" : "Nueva categoría"}
       footer={
         <button form="cat-form" className="btn-primary w-full" disabled={pending}>

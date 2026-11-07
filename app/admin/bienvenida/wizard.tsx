@@ -8,6 +8,7 @@ import { ImagePicker } from "@/components/admin/image-picker";
 import { refreshSession } from "@/components/auth/auth-client";
 import { slugify } from "@/lib/domain/slug";
 import { checkSlug, createBusiness } from "../actions";
+import { SITE_URL } from "@/lib/domain/links";
 
 const STEPS = ["Tu negocio", "Logo", "Portada"];
 
@@ -83,7 +84,9 @@ export function Wizard({ needsTerms, initialStep = 0 }: { needsTerms: boolean; i
           <div>
             <label htmlFor="slug" className="label">Dirección de tu página</label>
             <div className="flex items-center rounded-[var(--radius-ctl)] border border-line-2 bg-surface focus-within:border-ink focus-within:ring-2 focus-within:ring-ink/10">
-              <span className="num select-none pl-3 text-[15px] text-ink-2">nir.amoxtli.tech/</span>
+              {/* El dominio completo no cabe junto al campo en celular: ahí se muestra debajo. */}
+              <span className="num hidden select-none whitespace-nowrap pl-3 text-[15px] text-ink-2 sm:inline">{SITE_URL.replace(/^https?:\/\//, "")}/</span>
+              <span className="num select-none pl-3 text-[15px] text-ink-2 sm:hidden">/</span>
               <input
                 id="slug"
                 className="num min-h-11 w-full min-w-0 bg-transparent py-2 pr-3 text-[15px] focus:outline-none"
@@ -99,6 +102,9 @@ export function Wizard({ needsTerms, initialStep = 0 }: { needsTerms: boolean; i
             <p id="slug-help" className={`hint flex items-center gap-1.5 ${check ? (check.available ? "text-ok" : "text-bad") : ""}`} aria-live="polite">
               {check?.available && <Check className="h-4 w-4" />}
               {check ? check.message : "Letras minúsculas, números y guiones. Queda fija cuando grabemos tus tarjetas."}
+            </p>
+            <p className="num mt-1 break-all text-[13px] text-ink-3 sm:hidden">
+              {SITE_URL.replace(/^https?:\/\//, "")}/{slug || "tu-negocio"}
             </p>
           </div>
           {needsTerms && (
