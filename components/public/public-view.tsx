@@ -93,7 +93,7 @@ export function PublicView({ page, mode = "live", resolveImage, forceView, highl
   const displayClass = theme.template.uppercaseDisplay ? "uppercase tracking-[0.01em]" : "";
 
   return (
-    <div ref={rootRef} style={style} className="anim-fade min-h-full w-full overflow-x-hidden" data-template={theme.template.id}>
+    <div ref={rootRef} style={style} className="anim-fade min-h-full w-full overflow-x-clip" data-template={theme.template.id}>
       <div key={view} className={`mx-auto flex min-h-dvh w-full max-w-[480px] flex-col ${anim}`}>
         {view === "home" && (
           <Home page={page} displayClass={displayClass} img={img} go={go} tracker={tracker} template={theme.template.id} live={mode === "live"} highlight={highlight} />
@@ -298,34 +298,63 @@ function MenuSection({
   const cats = page.menu.categories;
   const [active, setActive] = useState(cats[0]?.id);
   const chipsRef = useRef<HTMLDivElement>(null);
+  const barRef = useRef<HTMLDivElement>(null);
+  // Mientras se desplaza por un toque en una categoría, el observador no cambia la activa.
+  const lockUntil = useRef(0);
 
   useEffect(() => {
-    if (mode !== "live") return;
     const els = cats.map((c) => document.getElementById(`cat-${c.id}`)).filter(Boolean) as HTMLElement[];
+    if (!els.length) return;
+    const scroller = scrollParent(els[0]);
+    const offset = (barRef.current?.offsetHeight ?? 110) + 10;
     const io = new IntersectionObserver(
       (entries) => {
+        if (Date.now() < lockUntil.current) return;
         const vis = entries.filter((e) => e.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
         if (vis[0]) setActive(vis[0].target.id.replace("cat-", ""));
       },
-      { rootMargin: "-120px 0px -60% 0px" },
+      { root: scroller === window ? null : (scroller as HTMLElement), rootMargin: `-${offset}px 0px -55% 0px` },
     );
     els.forEach((el) => io.observe(el));
     return () => io.disconnect();
   }, [cats, mode]);
 
+  // La barra de categorías se desplaza en horizontal sin mover la página
+  // (scrollIntoView cancelaría el desplazamiento vertical en curso).
   useEffect(() => {
-    const chip = chipsRef.current?.querySelector<HTMLElement>(`[data-cat="${active}"]`);
-    chip?.scrollIntoView({ block: "nearest", inline: "center" });
+    const bar = chipsRef.current;
+    const chip = bar?.querySelector<HTMLElement>(`[data-cat="${active}"]`);
+    if (!bar || !chip) return;
+    bar.scrollTo({ left: chip.offsetLeft - (bar.clientWidth - chip.offsetWidth) / 2, behavior: "smooth" });
   }, [active]);
 
   const jump = (id: string) => {
+    const el = document.getElementById(`cat-${id}`);
+    if (!el) return;
     setActive(id);
-    document.getElementById(`cat-${id}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    lockUntil.current = Date.now() + 1000;
+    const scroller = scrollParent(el);
+    const offset = (barRef.current?.offsetHeight ?? 110) + 4;
+    const isWin = scroller === window;
+    const sc = scroller as HTMLElement;
+    const current = isWin ? window.scrollY : sc.scrollTop;
+    const view = isWin ? window.innerHeight : sc.clientHeight;
+    const target = isWin
+      ? el.getBoundingClientRect().top + window.scrollY - offset
+      : el.getBoundingClientRect().top - sc.getBoundingClientRect().top + sc.scrollTop - offset;
+    // En cartas largas, salta casi al destino y termina con un desplazamiento corto y suave.
+    if (Math.abs(target - current) > view * 1.5) {
+      const near = target - Math.sign(target - current) * view * 0.6;
+      if (isWin) window.scrollTo({ top: near, behavior: "instant" });
+      else sc.scrollTo({ top: near, behavior: "instant" });
+    }
+    if (isWin) window.scrollTo({ top: target, behavior: "smooth" });
+    else sc.scrollTo({ top: target, behavior: "smooth" });
   };
 
   return (
     <>
-      <div className="sticky top-0 z-10" style={{ background: "var(--bg)" }}>
+      <div ref={barRef} className="sticky top-0 z-10" style={{ background: "var(--bg)" }}>
         <SectionBar title="Carta" back={back} displayClass={displayClass} />
         {cats.length > 1 && (
           <div ref={chipsRef} className="flex gap-2 overflow-x-auto px-4 pb-3 [scrollbar-width:none]" role="tablist" aria-label="Categorías">
@@ -358,7 +387,7 @@ function MenuSection({
       <main className="flex-1 px-4 pb-16">
         {cats.length === 0 && <p className="px-2 py-10 text-[16px] text-[var(--muted)]">La carta se está preparando.</p>}
         {cats.map((c) => (
-          <section key={c.id} id={`cat-${c.id}`} className="scroll-mt-[120px] pt-6">
+          <section key={c.id} id={`cat-${c.id}`} className="pt-6">
             <h2 className={`px-2 text-[22px] ${displayClass}`} style={{ fontFamily: "var(--display)", fontWeight: displayClass ? 800 : 400 }}>
               {c.name}
             </h2>
@@ -551,4 +580,15 @@ function useTracker(slug: string, enabled: boolean): Tracker {
     }),
     [enabled],
   );
+}
+
+/** El contenedor que se desplaza: la ventana en la página real, el marco del teléfono en las vistas previas. */
+function scrollParent(el: HTMLElement): HTMLElement | Window {
+  let p = el.parentElement;
+  while (p) {
+    const oy = getComputedStyle(p).overflowY;
+    if ((oy === "auto" || oy === "scroll") && p.scrollHeight > p.clientHeight) return p;
+    p = p.parentElement;
+  }
+  return window;
 }

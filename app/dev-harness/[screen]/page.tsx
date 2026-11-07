@@ -43,6 +43,15 @@ export default async function Harness({ params }: { params: Promise<{ screen: st
   if (process.env.NIR_DEV_HARNESS !== "1") notFound();
   const { screen } = await params;
   const t = fakeTenant();
+  if (screen === "publico-largo") {
+    const base = demoPage("noche");
+    const categories = Array.from({ length: 9 }, (_, c) => ({
+      id: `c${c}`,
+      name: ["Hamburguesas", "Burritos", "Snacks", "Hot dogs", "Chapatas", "Cervezas", "Cócteles", "Tequila", "Refrescos"][c],
+      items: Array.from({ length: 12 }, (_, i) => ({ id: `c${c}i${i}`, name: `Producto ${c + 1}.${i + 1}`, description: "Descripción de ejemplo para medir el largo de la carta.", priceCents: 9900, variants: [], tags: [], imageId: null, available: true })),
+    }));
+    return <PublicView page={{ ...base, menu: { categories } }} mode="live" />;
+  }
   if (screen.startsWith("publico-")) return <PublicView page={demoPage(screen.replace("publico-", "") as TemplateId)} mode="preview" />;
   const shell = (c: React.ReactNode) => (
     <AdminShell tenant={{ name: t.name, slug: t.slug, status: t.status }} readOnly={false} viewingAs={false} userEmail="dueno@ejemplo.mx">{c}</AdminShell>
