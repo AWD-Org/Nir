@@ -158,5 +158,4 @@ export const MENU_STYLES: MenuStyleDef[] = [
   { id: "lista", name: "Lista", description: "Renglones con foto pequeña a la derecha. Va con todo." },
   { id: "clasica", name: "Clásica", description: "Como carta impresa: nombre, puntos y precio. Para cantinas y fondas." },
   { id: "cuadricula", name: "Cuadrícula", description: "Fotos en dos columnas. Para cafés, postres y antojitos." },
-  { id: "destacada", name: "Destacada", description: "Foto grande en los platillos que la tienen. Para brunch y cocina de autor." },
 ];

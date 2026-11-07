@@ -406,9 +406,9 @@ function ThemeSection({ t, setT, readOnly, onMenuStyle }: SectionProps & { onMen
       </div>
       <div>
         <p className="label">Estilo de la carta</p>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4" role="radiogroup" aria-label="Estilo de la carta">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3" role="radiogroup" aria-label="Estilo de la carta">
           {MENU_STYLES.map((m) => {
-            const on = (t.theme.menuStyle ?? "lista") === m.id;
+            const on = (MENU_STYLES.some((x) => x.id === t.theme.menuStyle) ? t.theme.menuStyle : "lista") === m.id;
             return (
               <button
                 key={m.id}
@@ -501,13 +501,6 @@ function MenuStyleThumb({ style, r }: { style: MenuStyle; r: ResolvedTheme }) {
               {price}
             </div>
           ))}
-        </div>
-      )}
-      {style === "destacada" && (
-        <div className="space-y-1.5">
-          {photo("h-10 w-full")}
-          <div className="flex justify-between gap-2">{bar("50%")}{price}</div>
-          {bar("75%", 0.35)}
         </div>
       )}
     </div>

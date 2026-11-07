@@ -591,6 +591,7 @@ function ItemDetail({ item, img, displayClass, anchor, onClose }: { item: Public
   );
 }
 
+/** Un estilo desconocido o retirado se muestra como Lista. */
 function CategoryBlock({ cat, style, displayClass, img, onOpen }: { cat: PublicCategory; style: MenuStyle; displayClass: string; img: Img; onOpen: (i: PublicItem) => void }) {
   if (style === "clasica") {
     return (
@@ -618,20 +619,6 @@ function CategoryBlock({ cat, style, displayClass, img, onOpen }: { cat: PublicC
           {cat.items.map((i, n) => (
             <GridItem key={i.id} item={i} index={n} img={img} displayClass={displayClass} textOnly={!cat.items.some((x) => x.imageId)} onOpen={() => onOpen(i)} />
           ))}
-        </ul>
-      </section>
-    );
-  }
-  if (style === "destacada") {
-    return (
-      <section id={`cat-${cat.id}`} className="pt-8">
-        <h2 className={`border-b px-2 pb-3 text-[30px] leading-tight ${displayClass}`} style={{ ...displayStyle(displayClass), borderColor: "var(--text)" }}>
-          {cat.name}
-        </h2>
-        <ul>
-          {cat.items.map((i, n) =>
-            i.imageId ? <FeatureItem key={i.id} item={i} index={n} img={img} displayClass={displayClass} onOpen={() => onOpen(i)} /> : <EditorialItem key={i.id} item={i} index={n} displayClass={displayClass} onOpen={() => onOpen(i)} />,
-          )}
         </ul>
       </section>
     );
@@ -781,73 +768,6 @@ function GridItem({ item, index, img, displayClass, textOnly, onOpen }: { item: 
         {item.variants.length > 0 && <span className="font-normal text-[var(--muted)]">desde </span>}
         {formatPrice(fromPrice(item))}
       </p>
-    </li>
-  );
-}
-
-function FeatureItem({ item, index, img, displayClass, onOpen }: { item: PublicItem; index: number; img: Img; displayClass: string; onOpen: () => void }) {
-  const off = !item.available;
-  return (
-    <li {...tap(onOpen)} className="anim-rise cursor-pointer border-b px-2 py-5" style={{ borderColor: "var(--line)", opacity: off ? 0.65 : 1, "--i": Math.min(index, 8) } as CSSProperties}>
-      <PhotoOrInitial item={item} img={img} size="full" className="aspect-[4/3] w-full" displayClass={displayClass} />
-      <div className="mt-3 flex items-baseline justify-between gap-3">
-        <h3 className={`text-[22px] leading-tight ${displayClass}`} style={displayStyle(displayClass)}>
-          <Name item={item} />
-        </h3>
-        {item.variants.length === 0 && (
-          <span className="shrink-0 text-[18px] font-semibold tabular-nums" style={priceColor(off)}>
-            {formatPrice(item.priceCents)}
-          </span>
-        )}
-      </div>
-      {item.description && <p className="mt-1 text-[15px] leading-relaxed text-[var(--muted)]">{item.description}</p>}
-      {item.variants.length > 0 && (
-        <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[15px]">
-          {item.variants.map((v) => (
-            <li key={v.name}>
-              <span className="text-[var(--muted)]">{v.name}</span>{" "}
-              <span className="font-semibold tabular-nums" style={priceColor(off)}>
-                {formatPrice(v.priceCents)}
-              </span>
-            </li>
-          ))}
-        </ul>
-      )}
-      <Badges item={item} />
-    </li>
-  );
-}
-
-/** Destacada sin foto: el nombre manda, en la tipografía de la plantilla y a tamaño grande. */
-function EditorialItem({ item, index, displayClass, onOpen }: { item: PublicItem; index: number; displayClass: string; onOpen: () => void }) {
-  const off = !item.available;
-  return (
-    <li {...tap(onOpen)} className="anim-rise cursor-pointer border-b px-2 py-5" style={{ borderColor: "var(--line)", opacity: off ? 0.65 : 1, "--i": Math.min(index, 8) } as CSSProperties}>
-      <div className="flex items-baseline justify-between gap-4">
-        <h3 className={`text-[22px] leading-tight ${displayClass}`} style={displayStyle(displayClass)}>
-          <Name item={item} />
-        </h3>
-        {item.variants.length === 0 && (
-          <span className="shrink-0 text-[18px] font-semibold tabular-nums" style={priceColor(off)}>
-            {formatPrice(item.priceCents)}
-          </span>
-        )}
-      </div>
-      {item.description && <p className="mt-1.5 max-w-[34ch] text-[15px] leading-relaxed text-[var(--muted)]">{item.description}</p>}
-      {item.variants.length > 0 && (
-        <p className="mt-2 text-[15px]">
-          {item.variants.map((v, k) => (
-            <span key={v.name}>
-              {k > 0 && <span className="mx-2 text-[var(--line)]">/</span>}
-              <span className="text-[var(--muted)]">{v.name}</span>{" "}
-              <span className="font-semibold tabular-nums" style={priceColor(off)}>
-                {formatPrice(v.priceCents)}
-              </span>
-            </span>
-          ))}
-        </p>
-      )}
-      <Badges item={item} />
     </li>
   );
 }

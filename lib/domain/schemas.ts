@@ -39,7 +39,8 @@ export const themeSchema = z.object({
   templateId: z.enum(["noche", "mercado", "claro"]),
   primaryColor: hex,
   accentColor: hex,
-  menuStyle: z.enum(["lista", "clasica", "cuadricula", "destacada"]).optional(),
+  // Un estilo retirado (por ejemplo "destacada") se guarda como el predeterminado.
+  menuStyle: z.enum(["lista", "clasica", "cuadricula"]).optional().catch(undefined),
 });
 
 export const variantSchema = z.object({
